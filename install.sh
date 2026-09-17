@@ -1,0 +1,362 @@
+#!/usr/bin/env bash
+# Instala skills Cursor, command, subagente y/o el addon AgentKit.
+#   ./install.sh                      # ~/.cursor/skills, commands, agents
+#   ./install.sh --project            # ./.cursor/ del cwd
+#   ./install.sh --addon GODOT_ROOT   # addons/agent_kit → GODOT_ROOT/addons/agent_kit
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SRC="${ROOT}/skills"
+CMD_SRC="${ROOT}/commands"
+AGENT_SRC="${ROOT}/agents"
+ADDONS_ROOT="${ROOT}/addons"
+SKILL_NAMES=(
+  godot-agent-kit
+  godot-playtest
+)
+AGENT_FILES=(
+  studio-playtester.md
+)
+COMMAND_FILES=(
+  agent-kit.md
+)
+
+MODE="global"
+DEST=""
+GODOT_ROOT=""
+ADDON_WHICH="agent_kit"
+DO_SKILLS=1
+DO_COMMANDS=1
+DO_AGENTS=1
+
+usage() {
+  cat <<'EOF'
+Instalador de Godot studio playtest (AgentKit + playtester).
+
+  ./install.sh                      ~/.cursor/skills, commands y agents
+  ./install.sh --project            ./.cursor/skills, commands y agents del cwd
+  ./install.sh --dest DIR           Skills en DIR (commands y agents al lado)
+  ./install.sh --addon GODOT_ROOT [agent_kit]
+                                    Copia el addon al proyecto Godot (default: agent_kit)
+  ./install.sh --addon-only GODOT_ROOT
+                                    Solo el addon + workspace res://agent/
+  ./install.sh --agent-addon GODOT_ROOT
+                                    Alias de --addon GODOT_ROOT agent_kit
+  ./install.sh --list               Qué se instalaría
+  ./install.sh --pack               Genera dist/godot-studio-playtest.zip
+
+  npx skills add Joelnicolass/godot-studio-playtest -g -a cursor -y
+
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --project)
+      MODE="project"
+      shift
+      ;;
+    --global|-g)
+      MODE="global"
+      shift
+      ;;
+    --dest)
+      MODE="custom"
+      DEST="${2:?--dest requiere un directorio}"
+      shift 2
+      ;;
+    --addon)
+      GODOT_ROOT="${2:?--addon requiere la raíz del proyecto Godot}"
+      shift 2
+      if [[ $# -gt 0 && "$1" != -* ]]; then
+        ADDON_WHICH="$1"
+        shift
+      fi
+      ;;
+    --addon-only)
+      GODOT_ROOT="${2:?--addon-only requiere la raíz del proyecto Godot}"
+      DO_SKILLS=0
+      DO_COMMANDS=0
+      DO_AGENTS=0
+      shift 2
+      if [[ $# -gt 0 && "$1" != -* ]]; then
+        ADDON_WHICH="$1"
+        shift
+      fi
+      ;;
+    --agent-addon)
+      GODOT_ROOT="${2:?--agent-addon requiere la raíz del proyecto Godot}"
+      ADDON_WHICH="agent_kit"
+      shift 2
+      ;;
+    --list)
+      MODE="list"
+      shift
+      ;;
+    --pack)
+      exec "${ROOT}/pack.sh"
+      ;;
+    *)
+      echo "Opción desconocida: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [[ "$DO_SKILLS" -eq 1 && ! -d "$SRC" ]]; then
+  echo "No encuentro ${SRC}. ¿Corrés el script desde el zip/repo descomprimido?" >&2
+  exit 1
+fi
+
+if [[ "$DO_COMMANDS" -eq 1 && ! -d "$CMD_SRC" ]]; then
+  echo "No encuentro ${CMD_SRC}." >&2
+  exit 1
+fi
+
+if [[ "$DO_AGENTS" -eq 1 && ! -d "$AGENT_SRC" ]]; then
+  echo "No encuentro ${AGENT_SRC}." >&2
+  exit 1
+fi
+
+if [[ -n "$GODOT_ROOT" && ! -d "$ADDONS_ROOT" ]]; then
+  echo "No encuentro ${ADDONS_ROOT}" >&2
+  exit 1
+fi
+
+if [[ "$DO_SKILLS" -eq 1 ]]; then
+  for name in "${SKILL_NAMES[@]}"; do
+    if [[ ! -f "${SRC}/${name}/SKILL.md" ]]; then
+      echo "Falta skill: ${SRC}/${name}/SKILL.md" >&2
+      exit 1
+    fi
+  done
+fi
+
+resolve_skill_dest() {
+  case "$MODE" in
+    global) echo "${HOME}/.cursor/skills" ;;
+    project) echo "$(pwd)/.cursor/skills" ;;
+    custom) echo "$DEST" ;;
+    *) echo "" ;;
+  esac
+}
+
+resolve_command_dest() {
+  case "$MODE" in
+    global) echo "${HOME}/.cursor/commands" ;;
+    project) echo "$(pwd)/.cursor/commands" ;;
+    custom)
+      local parent
+      parent="$(cd "$(dirname "$DEST")" && pwd)"
+      echo "${parent}/commands"
+      ;;
+    *) echo "" ;;
+  esac
+}
+
+resolve_agent_dest() {
+  case "$MODE" in
+    global) echo "${HOME}/.cursor/agents" ;;
+    project) echo "$(pwd)/.cursor/agents" ;;
+    custom)
+      local parent
+      parent="$(cd "$(dirname "$DEST")" && pwd)"
+      echo "${parent}/agents"
+      ;;
+    *) echo "" ;;
+  esac
+}
+
+install_agent_kit_cursor_rule() {
+  local project="$1"
+  local src="${SRC}/godot-agent-kit/agent-kit-workspace.mdc"
+  if [[ ! -f "$src" ]]; then
+    return 0
+  fi
+  local dest_dir="${project}/.cursor/rules"
+  mkdir -p "$dest_dir"
+  cp "$src" "${dest_dir}/agent-kit-workspace.mdc"
+  echo "rule     ${dest_dir}/agent-kit-workspace.mdc"
+}
+
+copy_one_addon() {
+  local project="$1"
+  local name="$2"
+  local src="${ADDONS_ROOT}/${name}"
+  if [[ ! -d "$src" ]]; then
+    echo "No encuentro ${src}" >&2
+    exit 1
+  fi
+  local dest="${project}/addons/${name}"
+  mkdir -p "${project}/addons"
+  rm -rf "$dest"
+  cp -R "$src" "$dest"
+  if [[ -f "${dest}/cli.sh" ]]; then
+    chmod +x "${dest}/cli.sh"
+  fi
+  if [[ "$name" == "agent_kit" ]]; then
+    rm -rf "${dest}/examples"
+  fi
+  echo "addon  ${dest}"
+}
+
+scaffold_agent_workspace() {
+  local project="$1"
+  local dest="${project}/agent"
+  mkdir -p "${dest}/flows" "${dest}/harness" "${dest}/out"
+  if [[ ! -f "${dest}/out/.gdignore" ]]; then
+    : > "${dest}/out/.gdignore"
+  fi
+  if [[ ! -f "${dest}/README.md" ]]; then
+    cat > "${dest}/README.md" <<'EOF'
+# Workspace AgentKit (este proyecto)
+
+No es el addon. El plugin vive en `addons/agent_kit/` y no tiene gameplay.
+
+- `flows/` — JSON de `--agent=flow`. Nombre corto: `cli.sh . flow --flow=boot_smoke.json`
+- `harness/` — scripts GDScript que AgentKit monta **solo** si hay `--agent=`. El nodo se llama como el archivo (`hooks.gd` → `hooks`).
+- `out/` — PNG / dumps del run (Godot ignora esta carpeta).
+
+Nunca helpers de playtest en `src/` (spawn / forzar estado / contar / pausar para el flow; `agent_*` ni el mismo rol con otro nombre). `call()` a privados o `extends` la clase de producto desde acá no limpia `src/`. Si el playtest necesita un setup que no existe en la UI, escribí el helper acá y llamalo:
+
+```json
+{ "call": { "harness": "hooks", "method": "setup_slice" } }
+```
+
+```gdscript
+# harness/hooks.gd — extends Node, sin class_name
+extends Node
+
+func setup_slice() -> String:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return "no_scene"
+	# Usá %UniqueName o APIs públicas del juego. No edites glue de producción.
+	return "ok"
+```
+EOF
+  fi
+  echo "workspace  ${dest}"
+}
+
+install_addon() {
+  local project="$1"
+  local which="$2"
+  if [[ ! -d "$project" ]]; then
+    echo "No existe el proyecto Godot: ${project}" >&2
+    exit 1
+  fi
+  if [[ ! -f "${project}/project.godot" ]]; then
+    echo "No hay project.godot en ${project} — pasá la raíz del proyecto Godot." >&2
+    exit 1
+  fi
+  case "$which" in
+    agent_kit)
+      copy_one_addon "$project" "agent_kit"
+      scaffold_agent_workspace "$project"
+      install_agent_kit_cursor_rule "$project"
+      echo
+      echo "Habilitá el plugin AgentKit (autoload). CI/headless, en project.godot:"
+      echo '  AgentKit="*res://addons/agent_kit/agent_kit.gd"'
+      echo "Flows/harness: ${project}/agent/  (no en addons/ ni en src/)"
+      echo "CLI: ${project}/addons/agent_kit/cli.sh ${project} flow --flow=boot_smoke.json --fail-on-error"
+      ;;
+    *)
+      echo "Addon desconocido: ${which} (este repo solo instala agent_kit)" >&2
+      exit 1
+      ;;
+  esac
+}
+
+install_commands() {
+  local target="$1"
+  mkdir -p "$target"
+  echo "Commands → ${target}"
+  local name
+  for name in "${COMMAND_FILES[@]}"; do
+    cp "${CMD_SRC}/${name}" "${target}/${name}"
+    echo "  ok  ${name%.md}"
+  done
+}
+
+install_agents() {
+  local target="$1"
+  mkdir -p "$target"
+  echo "Agents → ${target}"
+  local name
+  for name in "${AGENT_FILES[@]}"; do
+    cp "${AGENT_SRC}/${name}" "${target}/${name}"
+    echo "  ok  ${name%.md}"
+  done
+}
+
+if [[ "$MODE" == "list" ]]; then
+  echo "Skills:"
+  for name in "${SKILL_NAMES[@]}"; do
+    echo "  - ${name}"
+  done
+  echo
+  echo "Commands:"
+  for name in "${COMMAND_FILES[@]}"; do
+    echo "  - /${name%.md}"
+  done
+  echo
+  echo "Subagentes:"
+  for name in "${AGENT_FILES[@]}"; do
+    echo "  - ${name%.md}"
+  done
+  echo
+  echo "Addons:"
+  echo "  - addons/agent_kit  (./install.sh --addon /path/to/godot-project)"
+  echo
+  echo "Destino skills (global): ${HOME}/.cursor/skills"
+  echo "Destino commands (global): ${HOME}/.cursor/commands"
+  echo "Destino agents (global): ${HOME}/.cursor/agents"
+  echo "Destino (--project): $(pwd)/.cursor/{skills,commands,agents}"
+  exit 0
+fi
+
+if [[ "$DO_SKILLS" -eq 1 ]]; then
+  TARGET="$(resolve_skill_dest)"
+  mkdir -p "$TARGET"
+  echo "Skills → ${TARGET}"
+  for name in "${SKILL_NAMES[@]}"; do
+    rm -rf "${TARGET}/${name}"
+    cp -R "${SRC}/${name}" "${TARGET}/${name}"
+    echo "  ok  ${name}"
+  done
+  echo
+  echo "Listo (skills). Chat nuevo en Cursor para recargar."
+  echo "  playtest:     godot-playtest"
+  echo "  agent kit:    godot-agent-kit"
+fi
+
+if [[ "$DO_COMMANDS" -eq 1 ]]; then
+  CMD_DEST="$(resolve_command_dest)"
+  echo
+  install_commands "$CMD_DEST"
+  echo
+  echo "Listo (commands). En Cursor: /agent-kit"
+fi
+
+if [[ "$DO_AGENTS" -eq 1 ]]; then
+  echo
+  install_agents "$(resolve_agent_dest)"
+  echo
+  echo "Listo (subagente studio-playtester). Chat nuevo para recargar."
+fi
+
+if [[ -n "$GODOT_ROOT" ]]; then
+  echo
+  install_addon "$GODOT_ROOT" "$ADDON_WHICH"
+fi
+
+if [[ "$DO_SKILLS" -eq 0 && "$DO_COMMANDS" -eq 0 && "$DO_AGENTS" -eq 0 && -z "$GODOT_ROOT" ]]; then
+  echo "Nada que hacer." >&2
+  exit 1
+fi

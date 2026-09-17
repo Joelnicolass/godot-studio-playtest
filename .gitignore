@@ -1,0 +1,10 @@
+.DS_Store
+dist/
+*.zip
+.publish.env
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
+node_modules/
+pnpm-debug.log*
+.pnpm-store/

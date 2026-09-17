@@ -1,0 +1,4 @@
+.godot/
+*.translation
+agent/out/*.png
+!agent/out/.gdignore
