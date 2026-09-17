@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Godot studio playtest",
+    "output": "docs/architecture.html",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "playtest-path",
+        "label": "Playtest con OK",
+        "focus": ["user", "cursor", "playtester", "addon", "godot", "workspace"],
+        "note": "El subagente solo corre Godot después de un OK explícito."
+      },
+      {
+        "id": "cli-path",
+        "label": "Captura y flow",
+        "focus": ["user", "cursor", "skills", "addon", "godot", "workspace"],
+        "note": "Las skills hablan con AgentKit por CLI; el JSON vive en res://agent/."
+      },
+      {
+        "id": "workspace",
+        "label": "Contrato del juego",
+        "focus": ["addon", "godot", "workspace"],
+        "note": "El plugin no guarda flows. JSON y harness quedan en el proyecto Godot."
+      }
+    ]
+  },
+  "components": [
+    { "id": "user", "type": "external", "label": "Vos", "sublabel": "humano", "pos": [40, 300], "size": [120, 60] },
+    { "id": "cursor", "type": "frontend", "label": "Chat Cursor", "sublabel": "Agent", "pos": [230, 300], "size": [140, 64] },
+    { "id": "skills", "type": "backend", "label": "Skills", "sublabel": "agent-kit + playtest", "pos": [450, 140], "size": [170, 64] },
+    { "id": "command", "type": "backend", "label": "/agent-kit", "sublabel": "command", "pos": [450, 300], "size": [170, 64] },
+    { "id": "playtester", "type": "backend", "label": "studio-playtester", "sublabel": "subagente", "tag": "OK gate", "pos": [450, 460], "size": [170, 64] },
+    { "id": "addon", "type": "backend", "label": "AgentKit", "sublabel": "addons/agent_kit", "pos": [710, 300], "size": [160, 64] },
+    { "id": "godot", "type": "external", "label": "Godot 4", "sublabel": "ventana + CLI", "pos": [940, 300], "size": [140, 64] },
+    { "id": "workspace", "type": "database", "label": "res://agent/", "sublabel": "flows harness out", "pos": [1160, 300], "size": [150, 64] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Cursor", "wraps": ["cursor", "skills", "command", "playtester"] },
+    { "kind": "region", "label": "Proyecto Godot", "wraps": ["addon", "godot", "workspace"] }
+  ],
+  "connections": [
+    { "id": "user-to-cursor", "from": "user", "to": "cursor", "label": "pide slice", "variant": "emphasis" },
+    { "id": "cursor-to-skills", "from": "cursor", "to": "skills", "label": "carga" },
+    { "id": "cursor-to-command", "from": "cursor", "to": "command", "variant": "dashed" },
+    { "id": "cursor-to-playtester", "from": "cursor", "to": "playtester", "label": "OK", "variant": "security" },
+    { "id": "skills-to-addon", "from": "skills", "to": "addon", "label": "cli.sh" },
+    { "id": "command-to-addon", "from": "command", "to": "addon", "variant": "dashed" },
+    { "id": "playtester-to-addon", "from": "playtester", "to": "addon", "label": "flow" },
+    { "id": "addon-to-godot", "from": "addon", "to": "godot", "label": "--agent=", "variant": "emphasis" },
+    { "id": "godot-to-workspace", "from": "godot", "to": "workspace", "label": "JSON / PNG" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Cursor", "items": ["Skills dicen cómo hablar con el CLI", "/agent-kit es el atajo humano", "studio-playtester no escribe producto"] },
+    { "dot": "emerald", "title": "AgentKit", "items": ["Autoload + cli.sh: capture, flow, inspect", "Sin --agent=, F5 no cambia", "AGENT_OK / AGENT_FAIL son el contrato"] },
+    { "dot": "rose", "title": "res://agent/", "items": ["Flows y harness fuera de src/", "call() a _métodos que el juego ya tiene", "Nunca agent_* en el glue de producto"] }
+  ]
+}

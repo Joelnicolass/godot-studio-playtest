@@ -1,69 +1,74 @@
-# Harness AgentKit — no contaminar producto
+# Harness AgentKit
 
-Leé esto **antes** de escribir un helper de playtest. El fallo típico: el flow no puede armar el estado con clicks, entonces se agregan métodos de setup / forzar estado / contar / pausar **en `src/`**. A veces llevan prefijo `agent_*`; a veces un nombre de dominio del juego. Eso **es** contaminación. El nombre no importa; importa **quién lo llama**.
+Read this **before** writing a playtest helper. Typical failure: the flow cannot set up state with clicks, so setup / force-state / count / pause methods land in `src/`. Prefix `agent_*` or a gameplay-looking name — same contamination. **Who calls it** matters, not the name.
 
-## Dónde puede vivir código de playtest
+## Where playtest code may live
 
-| Path | ¿Playtest? |
-|------|------------|
-| `res://agent/flows/*.json` | sí |
-| `res://agent/harness/*.gd` | sí (`extends Node`, **sin** `class_name`) |
-| `res://agent/fixtures/` | sí (`.tres` / `.tscn` solo para el run) |
-| `res://src/`, `res://scenes/`, glue de producto | **no** |
+| Path | Playtest? |
+|------|-----------|
+| `res://agent/flows/*.json` | yes |
+| `res://agent/harness/*.gd` | yes (`extends Node`, **no** `class_name`) |
+| `res://agent/fixtures/` | yes (run-only `.tres` / `.tscn`) |
+| `src/`, `scenes/`, product glue | **no** |
 
-Antes de editar un archivo fuera de `res://agent/`: **pará**. Si el cambio solo sirve al flow, va al harness.
+Stop before editing anything outside `res://agent/`. If the change only serves the flow, it belongs in the harness.
 
-## Qué es playtest (rol, no prefijo)
+## Product must not grow playtest APIs
 
-En producto **no** va un método cuyo trabajo sea, para el flow:
+Do not add a product method whose job, for the flow, is to spawn, force a state, count nodes, pause systems, or rebuild the world. `func agent_*` is forbidden; the same role under another name is too.
 
-- spawnear o colocar entidades que el jugador no coloca en esa pantalla
-- forzar un estado (contacto, cooldown, victoria, seed de pelea)
-- contar nodos para un assert
-- pausar o desactivar sistemas “hasta que el agente termine”
-- reconstruir o reemplazar el mundo solo para el run
+A public product API is allowed only if the **game** already needs it (load, generator, editor, replay). If the only caller is the flow or `res://agent/`, it is playtest → harness.
 
-`func agent_*` en `src/` está prohibido. **Sacar el prefijo y dejar el mismo rol también.**
+## `call()` on `_methods`
 
-Una API pública en producto solo si el **juego** ya la necesita (load, generador, editor, replay). Si el único caller es el JSON del flow o `res://agent/`, es playtest: va al harness.
+GDScript `_` is a [naming convention](https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_styleguide.html#functions-and-variables), not runtime privacy. [`Object.call`](https://docs.godotengine.org/en/stable/classes/class_object.html#class-object-method-call) / `callv` / `has_method` run the method if it exists.
 
-## Qué puede hacer el harness
+Use that **before** asking for a new public API:
 
-Orden:
+```gdscript
+# res://agent/harness/hooks.gd
+extends Node
 
-1. Clicks / `press` / `wait_until` como un jugador. Preferí esto.
-2. `call.harness` a un script en `res://agent/harness/`.
-3. En el harness: escena actual, `%UniqueName`, `find_children`, packed scenes **ya** del juego, señales **públicas**. Contar = `find_children`, no un getter nuevo en producto.
-4. Fixtures en `res://agent/fixtures/`. No dupliques la lógica de construcción del mundo.
-
-```json
-{ "call": { "harness": "hooks", "method": "setup_slice" } }
+func play_via_private() -> String:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return "no_scene"
+	if not scene.has_method("_on_play"):
+		return "missing__on_play"
+	scene.call("_on_play")
+	return "ok"
 ```
 
-## Si el razonamiento suena así, pará
+```json
+{ "call": { "harness": "hooks", "method": "play_via_private" } }
+{ "call": { "node": ".", "method": "_on_play" } }
+```
 
-Estos argumentos **no** limpian el producto:
+AgentKit does not block `_`. It blocks `free` / `queue_free` / `replace_by` / `set_script`.
 
-- “Llamo un `_on_*` / `call()` a privados, no contaminé.”
-- “Extiendo la clase de producto desde `agent/` y el script original queda intacto.”
-- “Renombro `agent_*` a un nombre que parece de gameplay.”
-- “Agrego un público solo para el flow.”
-- “Piso una ref privada del contenedor con `set("_…")` / duplico la escena de producto para el run.”
+Calling an **existing** `_method` does **not** justify adding `_setup_for_agent` (or a public twin) on the product.
 
-El helper va a `res://agent/harness/*.gd`. En `src/` solo API que el **juego** ya necesita. Setup, pausa, forzar estado y conteos = harness (`find_children`, señales públicas, APIs que el jugador también usa).
+## Order
 
-## Mentiras que no uses
+1. Clicks / `press` / `wait_until` as a player.
+2. `call.harness` on `res://agent/harness/`.
+3. In the harness: current scene, `%UniqueName`, `find_children`, existing packed scenes, public signals, and `call()` / `callv()` on methods the product already has. Count with `find_children`, not a new getter.
+4. Fixtures in `res://agent/fixtures/`. Do not duplicate world-building.
 
-- `call()` a `_privados` / tocar listas internas **no** justifica agregar esos métodos en producto “para que sea usable”.
-- `extends` una clase de producto bajo `agent/` no limpia el producto si igual le pedís API de playtest.
-- Un método público cuyo único caller es el flow **es** playtest. Nombre de producto (`load_level`, aplicar un layout) solo si el **juego** también lo usa. Si no hay caller de producto, no lo agregues: hacé el setup en el harness o **pará** y pedí OK.
-- `set("_ref", …)` en el contenedor para “no tocar producto” es el mismo acoplamiento.
+## Stop
 
-## Chequeo al terminar
+These do **not** keep the product clean:
+
+- Extending a product class from `agent/`.
+- Renaming `agent_*` to a gameplay-looking name.
+- Adding a public or new `_private` method only for the flow.
+- `set("_ref", …)` to replace internals, or duplicating a product scene just for the run.
+
+## Done check
 
 ```bash
 rg -n "func agent_" src scenes
 git diff --stat -- src scenes
 ```
 
-Cero `func agent_`. El diff del playtest **no agrega métodos** en `src/` salvo una API de producto **ya justificada** (quién más la llama, no el flow).
+Zero `func agent_`. The playtest diff must not add product methods unless the **game** already calls that API.

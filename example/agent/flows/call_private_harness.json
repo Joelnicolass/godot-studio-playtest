@@ -1,0 +1,11 @@
+{
+	"wait_first": 0.6,
+	"steps": [
+		{ "assert": { "node": "%AfterPlay", "visible": false } },
+		{ "call": { "harness": "hooks", "method": "play_via_private" } },
+		{ "wait": 0.2 },
+		{ "assert": { "node": "%AfterPlay", "visible": true } },
+		{ "assert": { "node": "%PlaySolo", "disabled": true } },
+		{ "print": { "node": "%Status", "prop": "text" } }
+	]
+}

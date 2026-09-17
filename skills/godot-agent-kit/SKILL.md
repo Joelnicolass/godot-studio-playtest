@@ -1,65 +1,68 @@
 ---
 name: godot-agent-kit
 description: >-
-  Drive a Godot 4 project with AgentKit (addon like MpKit): screenshots,
-  click/type flows, HTTP fetch, node inspect, PNG diff. Use when capturing
-  the game, writing res://agent/ flows or harnesses, or when tempted to add
-  playtest helpers (spawn / force-state / count / pause for the flow) to src/.
-  Not GUT. Not an MCP.
+  Drives a Godot 4 project with the AgentKit CLI: viewport capture,
+  click/type/press flows, node inspect, HTTP fetch, PNG diff. Use when
+  capturing the game, writing res://agent/ flows or harnesses, or when
+  tempted to add playtest helpers to src/. Not an MCP.
 ---
 
-# AgentKit — tools for the agent (no MCP)
+# AgentKit
 
-Addon `addons/agent_kit/` in the **game** project. Cero gameplay. El agente habla con Godot por CLI; las líneas `AGENT_OK` / `AGENT_FAIL` son el contrato. JSON, harnesses y dumps viven en **`res://agent/`** del juego, no dentro del addon ni en `src/`.
+Addon `addons/agent_kit/` in the Godot project. Zero gameplay. The agent talks to Godot via CLI; `AGENT_OK` / `AGENT_FAIL` are the contract. JSON, harnesses and dumps live in **`res://agent/`** — not in the addon, not in `src/`.
 
-Si el addon no está:
+## When to use
+
+- Capture or run a UI flow (not a made-up PNG).
+- Before/after a shader or layout: `capture` + `diff`.
+- Download a file into `res://`: `fetch`.
+- Understand a scene: `inspect --unique`.
+- About to write `godot -s /tmp/*.gd` → stop, use AgentKit.
+
+A human-style playtest still needs user OK (`godot-playtest`).
+
+## Install
 
 ```bash
-# desde godot-studio-playtest
 ./install.sh --addon /path/to/godot-project
 ```
 
-Enable plugin **AgentKit** (autoload). Sin `--agent=`, F5 no cambia.
+Enable plugin **AgentKit**. Without `--agent=`, F5 is unchanged.
 
-## No hagas esto
+## Do not
 
 ```bash
-godot --path game -s /tmp/capture.gd   # extends SceneTree
+godot --path game -s /tmp/capture.gd
 ```
 
-Los `class_name` del juego se compilan **antes** que los autoloads → `PortraitCache` / `DraftCopy` missing. Capturá con AgentKit.
+Game `class_name` scripts compile **before** autoloads. Capture from the AgentKit autoload so it survives `change_scene`.
 
-## Cómo correr
+## Run
 
 ```bash
 addons/agent_kit/cli.sh /ABS/PROJECT VERB [--flag=value ...]
-# GODOT=/path/to/Godot si no está en PATH / Applications / Downloads
+# GODOT=/path/to/Godot if the binary is not on PATH
 ```
 
-`cli.sh` pone `--headless` en info/fetch/inspect/diff. **No** lo pone en capture/flow (hace falta ventana para píxeles).
+`cli.sh` adds `--headless` for `info` / `fetch` / `inspect` / `diff`. **Not** for `capture` / `flow` (pixels need a window).
 
-| Verb | Uso |
+| Verb | Use |
 |------|-----|
-| `flow` | `--flow=boot_smoke.json` (o `res://agent/flows/…`) `--out=res://agent/out` `--fail-on-error` |
+| `flow` | `--flow=boot_smoke.json` `--out=res://agent/out` `--fail-on-error` |
 | `capture` | `--out=res://agent/out/a.png` `--scene=res://...` `--wait=1.1` `--fail-on-error` |
-| `diff` | `--a=` `--b=` `--out=/tmp/diff.png` `--threshold=0.02` |
+| `diff` | `--a=` `--b=` `--out=` `--threshold=0.02` |
 | `inspect` | `--unique` `--node=%CardView` `--scene=` |
-| `fetch` | `--url=` `--out=` `--ua=` (Wikimedia exige User-Agent) |
-| `info` | viewport, main scene, versión, InputMap `actions` |
+| `fetch` | `--url=` `--out=` `--ua=` |
+| `info` | viewport, main scene, version, InputMap |
 
-Grep: `AGENT_OK`, `AGENT_FAIL`, `AGENT_SHOT=`, `AGENT_PRINT`, `AGENT_CLICK`, `AGENT_PRESS`, `AGENT_SELECT`, `AGENT_RANGE`, `AGENT_SCROLL`, `AGENT_DRAG`, `AGENT_CALL`, `AGENT_HARNESS`, `AGENT_STEP`, `AGENT_STEP_ERROR`, `AGENT_ERRORS`, `AGENT_SKIP`, `AGENT_REPEAT`, `AGENT_DIFF`, `AGENT_JSON`.
+Grep: `AGENT_OK`, `AGENT_FAIL`, `AGENT_SHOT=`, `AGENT_PRINT`, `AGENT_CLICK`, `AGENT_PRESS`, `AGENT_CALL`, `AGENT_STEP`, `AGENT_STEP_ERROR`, `AGENT_ERRORS`, `AGENT_SKIP`, `AGENT_REPEAT`, `AGENT_DIFF`, `AGENT_JSON`.
 
-JSON en `res://agent/flows/`. Helpers **solo** en `res://agent/harness/*.gd`. Contrato: [harness.md](harness.md) — leelo **antes** de tocar un `.gd` de producto. Spawn / forzar estado / contar / pausar para el flow **no** van en `src/` (`agent_*` ni el mismo rol con otro nombre).
+## Rules
 
-Flows largos (botón que no está en tu turno): `try_click` + `repeat` hasta `%ResultsView` visible. API: `addons/agent_kit/README.md`. Detalle JSON: [flows.md](flows.md).
+1. Flows in `res://agent/flows/*.json`. Steps: [flows.md](flows.md).
+2. Helpers only in `res://agent/harness/*.gd`. Read [harness.md](harness.md) **before** editing a product `.gd`.
+3. Do not add spawn / force-state / count / pause helpers to `src/` (`agent_*` or the same role under another name).
+4. The harness **may** `call()` methods the product already has, including `_prefixed` ones. GDScript `_` is not runtime-private.
+5. Long / turn-based UI: `try_click` + `repeat`, not a hard `click` on a disabled button.
 
-Editor de cables **experimental** (localhost, no va en `./install.sh`): `experimental/agent-flow-editor/` (`pnpm install` && `pnpm dev`) — bind al proyecto Godot, pegá `%UniqueName` / InputMap, **Run flow** corre el mismo JSON.
-
-## Cuándo
-
-- Playtest / visual: captura o flow, no un PNG de memoria.
-- Comparar antes/después de un shader o layout: `capture` + `diff`.
-- Bajar un thumb a `res://`: `fetch` (no scrapees a mano sin UA).
-- Entender una escena: `inspect --unique`.
-
-Playtest humano sigue pidiendo OK (`godot-playtest`). Visual (`VISUAL.md`) y tests GUT no viven en este módulo: están en `godot-studio-skills`.
+Optional visual editor (not in `./install.sh`): `experimental/agent-flow-editor/` (`pnpm install` && `pnpm dev`).

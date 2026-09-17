@@ -2,7 +2,7 @@
 
 App **chica** (Vite + React, localhost) para armar el JSON de `--agent=flow` **conectando cables**, vincular `%UniqueName` / InputMap del proyecto Godot y **lanzar** el flow con AgentKit.
 
-No es un MCP. No entra en `./install.sh`. El contrato sigue siendo el JSON de [flows.md](../../skills/godot-agent-kit/flows.md). Forma parte de `godot-studio-playtest`, no del studio kit completo.
+No es un MCP. No entra en `./install.sh`. El contrato es el JSON de [flows.md](../../skills/godot-agent-kit/flows.md).
 
 **pnpm** (no `npm`). `node_modules/` no se versiona.
 

@@ -2,6 +2,7 @@ class_name AgentOps
 extends RefCounted
 
 const Workspace := preload("res://addons/agent_kit/agent_workspace.gd")
+# Underscore methods are callable (GDScript "_" is a convention, not runtime privacy).
 const _BLOCKED_METHODS := ["free", "queue_free", "replace_by", "set_script"]
 
 

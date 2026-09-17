@@ -1,65 +1,45 @@
 # AgentKit
 
-Herramientas para **agentes de IA** (y humanos) que manejan un proyecto Godot 4: captura, flujos de clic, HTTP, inspect, diff de imágenes. **Cero gameplay.** Copiá el addon, enable del plugin; el juego no nombra puntaje acá.
+CLI para agentes (y humanos) sobre un proyecto Godot 4: captura, flows de clic, HTTP, inspect, diff de PNG. **Cero gameplay.**
 
-No es un MCP. El agente corre el binario de Godot con flags. Las skills `godot-agent-kit` y `godot-playtest` dicen cuándo.
+No es un MCP. El agente corre el binario de Godot. Las skills `godot-agent-kit` y `godot-playtest` dicen cuándo.
 
 ## Por qué existe
 
-Un `extends SceneTree` en `/tmp` + `godot -s` rompe autoloads: los `class_name` del juego se compilan **antes** de `PortraitCache` / `DraftCopy`. Capturar desde un **autoload** del proyecto evita eso y **sobrevive** `change_scene`.
+`godot -s /tmp` + `extends SceneTree` rompe autoloads: los `class_name` del juego se compilan **antes**. El autoload AgentKit captura desde el proyecto y **sobrevive** `change_scene`.
 
 ## Instalar
-
-Desde este repo:
 
 ```bash
 ./install.sh --addon /path/to/godot-project
 ```
 
-Habilitá el plugin **AgentKit** (autoload `AgentKit`). Headless/CI:
+Habilitá el plugin **AgentKit**. CI/headless:
 
 ```
 AgentKit="*res://addons/agent_kit/agent_kit.gd"
 ```
 
-Si no hay `--agent=`, F5 del juego no cambia.
+Sin `--agent=`, F5 no cambia.
 
-El **workspace del juego** es `res://agent/` (lo crea `install.sh`). Ahí van JSON, harnesses y PNG. **No** en el addon ni en `src/` — ni un método de spawn / forzar estado / contar / pausar solo para el flow (`agent_*` ni el mismo rol con otro nombre). Contrato: `skills/godot-agent-kit/harness.md`. El instalador copia `.cursor/rules/agent-kit-workspace.mdc` al proyecto Godot.
+Workspace del **juego**: `res://agent/` (lo crea `install.sh`). JSON, harnesses y PNG van ahí, no en el addon ni en `src/`. Contrato: `skills/godot-agent-kit/harness.md`. El instalador copia `.cursor/rules/agent-kit-workspace.mdc`.
 
 ## CLI
 
 ```bash
 addons/agent_kit/cli.sh /path/to/godot-project VERB [flags]
-# o:
-godot --path PROJECT --resolution WxH -- --agent=VERB --out=/tmp/a.png
 ```
 
 | Verb | Ventana | Qué hace |
 |------|---------|----------|
-| `info` | headless OK | JSON: versión, main scene, viewport |
-| `capture` | **sí** | PNG del viewport (`--scene=` opcional, `--wait=`, `--out=`) |
-| `flow` | **sí** | JSON de pasos (`--flow=`, `--out=` dir) |
-| `fetch` | headless OK | HTTP GET/POST con User-Agent (`--url=`, `--out=`) |
-| `inspect` | headless OK | Árbol o `%UniqueName` (`--unique`, `--node=`) |
-| `diff` | headless OK | Diff de dos PNG (`--a=`, `--b=`, `--out=` overlay, `--threshold=`) |
+| `info` | headless OK | versión, main scene, viewport |
+| `capture` | **sí** | PNG (`--scene=`, `--wait=`, `--out=`) |
+| `flow` | **sí** | JSON (`--flow=`, `--out=` dir) |
+| `fetch` | headless OK | HTTP (`--url=`, `--out=`, `--ua=`) |
+| `inspect` | headless OK | árbol o `%UniqueName` |
+| `diff` | headless OK | dos PNG (`--a=`, `--b=`, `--out=`, `--threshold=`) |
 
-Líneas para grep:
-
-```
-AGENT_OK capture /abs/path.png
-AGENT_FAIL flow missing --flow=
-AGENT_SHOT=...
-AGENT_PRINT node=%Title prop=text value=...
-AGENT_CLICK %BidButton
-AGENT_PRESS ui_accept pressed=true
-AGENT_STEP 4 click
-AGENT_STEP_ERROR 4 res://foo.gd:12 …
-AGENT_ERRORS [{"kind":"script","text":"…"}]
-AGENT_SKIP try_click %PassButton
-AGENT_REPEAT done iter=13
-AGENT_DIFF changed=12 total=1000 percent=1.200
-AGENT_JSON {...}
-```
+Líneas para grep: `AGENT_OK`, `AGENT_FAIL`, `AGENT_SHOT=`, `AGENT_PRINT`, `AGENT_CLICK`, `AGENT_PRESS`, `AGENT_STEP`, `AGENT_STEP_ERROR`, `AGENT_ERRORS`, `AGENT_SKIP`, `AGENT_REPEAT`, `AGENT_DIFF`, `AGENT_JSON`, `AGENT_CALL`.
 
 ## Flow JSON
 
@@ -71,57 +51,47 @@ AGENT_JSON {...}
     { "shot": "01.png" },
     { "click": "%PlaySolo" },
     { "press": "ui_accept" },
-    { "type": { "node": "%Ip", "text": "127.0.0.1" } },
-    { "wait": 1.2 },
-    { "wait_until": { "node": "%Status", "text_contains": "listo", "timeout": 5 } },
-    { "assert": { "node": "%PlaySolo", "disabled": false } },
-    { "print": { "node": "%Title", "prop": "text" } }
+    { "wait": 0.4 },
+    { "assert": { "node": "%AfterPlay", "visible": true } },
+    { "print": { "node": "%Status", "prop": "text" } }
   ]
 }
 ```
 
-`click` emite `pressed` en el `BaseButton` (no apunta al píxel). `%Nombre` se busca en la escena y, si falta, en hijos (packed scenes). `press` dispara un `InputEventAction` (`"ui_accept"` o `{ "name": "move_left", "hold": 0.4 }`). `--fail-on-error` hace fallar capture/flow si el engine logueó ERROR o SCRIPT ERROR. `inspect --unique` también imprime `AGENT_JSON` con esos `%` (click/type/select/range/scroll). `info` incluye `actions`, `workspace` y `harness`.
+`click` emite `pressed` en el `BaseButton`. `%Nombre` se busca en la escena y en hijos. `press` es InputMap. `--fail-on-error` falla si el engine logueó ERROR / SCRIPT ERROR. `--flow=boot_smoke.json` busca en `res://agent/flows/`. `--out=` default: `res://agent/out`.
 
-`--flow=` acepta un path `res://`, uno absoluto, o un nombre en `res://agent/flows/` (`--flow=boot_smoke.json`). El `--out=` por defecto es `res://agent/out`.
-
-Un setup que no existe en la UI **no** se pega al glue del juego. Va en `res://agent/harness/hooks.gd` (`extends Node`, sin `class_name`) y el flow llama:
+Setup que no está en la UI → `res://agent/harness/` (`extends Node`, sin `class_name`). El harness puede `call()` métodos que el producto **ya** tiene, también `_prefixed`:
 
 ```json
-{ "call": { "harness": "hooks", "method": "setup_slice" } }
+{ "call": { "harness": "hooks", "method": "play_via_private" } }
+{ "call": { "node": ".", "method": "_on_play" } }
 ```
 
-AgentKit monta esos scripts **solo** cuando corre `--agent=`. F5 de un jugador no los carga.
+AgentKit monta el harness **solo** con `--agent=`. F5 de un jugador no lo carga.
 
-Para un match o un HUD que aparece y desaparece:
+UI que aparece y desaparece:
 
 ```json
 {
-  "try_click": "%PassButton",
+  "try_click": "%PlaySolo",
   "repeat": {
     "times": 80,
-    "until": { "node": "%ResultsView", "visible": true },
+    "until": { "node": "%AfterPlay", "visible": true },
     "steps": [
-      { "try_click": "%PassButton" },
-      { "wait": 0.2 },
-      { "try_click": "%BidButton" },
-      { "wait": 0.3 }
+      { "try_click": "%PlaySolo" },
+      { "wait": 0.2 }
     ]
   }
 }
 ```
 
-`try_click` no falla si el nodo falta, está `disabled` o no está visible en el árbol (`AGENT_SKIP`). `repeat` corre `steps` hasta `times` o hasta que `until` (mismo shape que `assert`) pase. `assert` / `wait_until` también aceptan `visible_in_tree`.
+`try_click` no falla si el nodo falta, está `disabled` o no está visible (`AGENT_SKIP`). Detalle de steps: `skills/godot-agent-kit/flows.md`. Demo: `example/agent/flows/`.
 
-Ejemplo del demo: `example/agent/flows/boot_smoke.json` (workspace del proyecto, no del addon).
-
-Editor de cables experimental: `experimental/agent-flow-editor/` (Vite, **pnpm**, localhost). Bind al `project.godot`, Scan / Live inspect para pegar `%UniqueName` e InputMap, **Run flow** llama `cli.sh`. No forma parte de `./install.sh`.
+Editor experimental: `experimental/agent-flow-editor/` (Vite, **pnpm**). No entra en `./install.sh`.
 
 ## Qué no es
 
-- GUT / GdUnit4 (eso no vive en este módulo)
-- Playtest humano sin OK del usuario (skill `godot-playtest`)
-- Pase visual sin `VISUAL.md` (vive en `godot-studio-skills`)
-- Transporte / salas (MpKit; vive en `godot-studio-skills`)
+No es un runner de tests unitarios. No es un MCP. No es un motor de juego. Un playtest de slice sigue pidiendo OK del usuario.
 
 ## Versión
 
