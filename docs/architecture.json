@@ -1,59 +1,90 @@
 {
-  "schema_version": 1,
-  "diagram_type": "architecture",
+  "schema_version": 2,
+  "diagram_type": "workflow",
   "meta": {
-    "title": "Godot studio playtest",
+    "title": "Playtest de un slice",
     "output": "docs/architecture.html",
     "quality_profile": "showcase",
     "views": [
       {
-        "id": "playtest-path",
-        "label": "Playtest con OK",
-        "focus": ["user", "cursor", "playtester", "addon", "godot", "workspace"],
-        "note": "El subagente solo corre Godot después de un OK explícito."
+        "id": "ok-path",
+        "label": "Con OK del usuario",
+        "focus": ["user", "playtester", "inspect", "flows", "cli", "evidence"],
+        "note": "Sin OK no se lanza Godot. inspect --unique, JSON en flows/, flow con --fail-on-error."
       },
       {
-        "id": "cli-path",
-        "label": "Captura y flow",
-        "focus": ["user", "cursor", "skills", "addon", "godot", "workspace"],
-        "note": "Las skills hablan con AgentKit por CLI; el JSON vive en res://agent/."
+        "id": "harness-src",
+        "label": "Harness, no src/",
+        "focus": ["flows", "harness", "cli"],
+        "note": "Si no hay click, call() a métodos que el juego ya tiene. Nunca agent_* en src/."
       },
       {
-        "id": "workspace",
-        "label": "Contrato del juego",
-        "focus": ["addon", "godot", "workspace"],
-        "note": "El plugin no guarda flows. JSON y harness quedan en el proyecto Godot."
+        "id": "fail-contract",
+        "label": "Qué cuenta como FAIL",
+        "focus": ["cli", "evidence", "fail"],
+        "note": "SCRIPT ERROR o AGENT_FAIL es FAIL aunque el botón se haya podido pulsar."
       }
     ]
   },
-  "components": [
-    { "id": "user", "type": "external", "label": "Vos", "sublabel": "humano", "pos": [40, 300], "size": [120, 60] },
-    { "id": "cursor", "type": "frontend", "label": "Chat Cursor", "sublabel": "Agent", "pos": [230, 300], "size": [140, 64] },
-    { "id": "skills", "type": "backend", "label": "Skills", "sublabel": "agent-kit + playtest", "pos": [450, 140], "size": [170, 64] },
-    { "id": "command", "type": "backend", "label": "/agent-kit", "sublabel": "command", "pos": [450, 300], "size": [170, 64] },
-    { "id": "playtester", "type": "backend", "label": "studio-playtester", "sublabel": "subagente", "tag": "OK gate", "pos": [450, 460], "size": [170, 64] },
-    { "id": "addon", "type": "backend", "label": "AgentKit", "sublabel": "addons/agent_kit", "pos": [710, 300], "size": [160, 64] },
-    { "id": "godot", "type": "external", "label": "Godot 4", "sublabel": "ventana + CLI", "pos": [940, 300], "size": [140, 64] },
-    { "id": "workspace", "type": "database", "label": "res://agent/", "sublabel": "flows harness out", "pos": [1160, 300], "size": [150, 64] }
+  "lanes": [
+    { "id": "cursor", "label": "Cursor" },
+    { "id": "workspace", "label": "res://agent/" },
+    { "id": "godot", "label": "Godot + AgentKit" }
   ],
-  "boundaries": [
-    { "kind": "region", "label": "Cursor", "wraps": ["cursor", "skills", "command", "playtester"] },
-    { "kind": "region", "label": "Proyecto Godot", "wraps": ["addon", "godot", "workspace"] }
+  "phases": [
+    { "id": "gate", "label": "OK", "fromCol": 0, "toCol": 1, "variant": "security" },
+    { "id": "discover", "label": "Descubrir y JSON", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "run", "label": "Correr y evidencia", "fromCol": 4, "toCol": 5 }
   ],
-  "connections": [
-    { "id": "user-to-cursor", "from": "user", "to": "cursor", "label": "pide slice", "variant": "emphasis" },
-    { "id": "cursor-to-skills", "from": "cursor", "to": "skills", "label": "carga" },
-    { "id": "cursor-to-command", "from": "cursor", "to": "command", "variant": "dashed" },
-    { "id": "cursor-to-playtester", "from": "cursor", "to": "playtester", "label": "OK", "variant": "security" },
-    { "id": "skills-to-addon", "from": "skills", "to": "addon", "label": "cli.sh" },
-    { "id": "command-to-addon", "from": "command", "to": "addon", "variant": "dashed" },
-    { "id": "playtester-to-addon", "from": "playtester", "to": "addon", "label": "flow" },
-    { "id": "addon-to-godot", "from": "addon", "to": "godot", "label": "--agent=", "variant": "emphasis" },
-    { "id": "godot-to-workspace", "from": "godot", "to": "workspace", "label": "JSON / PNG" }
+  "groups": [
+    { "id": "agent-files", "label": "Sí playtest", "lane": "workspace", "fromCol": 3, "toCol": 4, "variant": "emphasis" }
+  ],
+  "mainPath": ["user", "playtester", "inspect", "flows", "cli", "evidence"],
+  "nodes": [
+    { "id": "user", "lane": "cursor", "col": 0, "type": "external", "label": "Vos", "sublabel": "aceptás este slice", "width": 140 },
+    { "id": "playtester", "lane": "cursor", "col": 1, "type": "frontend", "label": "studio-playtester", "sublabel": "todos los criterios", "tag": "sin OK → stop", "width": 150 },
+    { "id": "inspect", "lane": "godot", "col": 2, "type": "backend", "label": "inspect --unique", "sublabel": "%PlaySolo y el árbol", "width": 150 },
+    { "id": "flows", "lane": "workspace", "col": 3, "type": "database", "label": "flows/*.json", "sublabel": "click · press · assert", "width": 148 },
+    { "id": "harness", "lane": "workspace", "col": 4, "type": "backend", "label": "harness/*.gd", "sublabel": "call(_on_play)", "width": 148 },
+    { "id": "cli", "lane": "godot", "col": 4, "type": "backend", "label": "cli.sh flow", "sublabel": "--fail-on-error", "tag": "ventana", "width": 148 },
+    { "id": "evidence", "lane": "cursor", "col": 5, "type": "database", "label": "AGENT_OK + PNG", "sublabel": "res://agent/out", "width": 148 },
+    { "id": "fail", "lane": "godot", "col": 5, "type": "security", "label": "AGENT_FAIL", "sublabel": "SCRIPT ERROR cuenta", "width": 148 }
+  ],
+  "edges": [
+    { "id": "ask-ok", "from": "user", "to": "playtester", "label": "OK de este playtest", "variant": "emphasis" },
+    { "id": "do-inspect", "from": "playtester", "to": "inspect", "label": "cli.sh inspect" },
+    { "id": "write-flow", "from": "inspect", "to": "flows", "label": "escribe %nodos" },
+    { "id": "run-clicks", "from": "flows", "to": "cli", "label": "flow JSON", "variant": "emphasis" },
+    { "id": "need-harness", "from": "flows", "to": "harness", "label": "sin click útil", "variant": "dashed", "role": "branch" },
+    { "id": "harness-run", "from": "harness", "to": "cli", "label": "call.harness" },
+    { "id": "ok-evidence", "from": "cli", "to": "evidence", "label": "AGENT_OK", "variant": "emphasis" },
+    { "id": "engine-fail", "from": "cli", "to": "fail", "label": "SCRIPT ERROR", "variant": "security", "role": "error" }
   ],
   "cards": [
-    { "dot": "cyan", "title": "Cursor", "items": ["Skills dicen cómo hablar con el CLI", "/agent-kit es el atajo humano", "studio-playtester no escribe producto"] },
-    { "dot": "emerald", "title": "AgentKit", "items": ["Autoload + cli.sh: capture, flow, inspect", "Sin --agent=, F5 no cambia", "AGENT_OK / AGENT_FAIL son el contrato"] },
-    { "dot": "rose", "title": "res://agent/", "items": ["Flows y harness fuera de src/", "call() a _métodos que el juego ya tiene", "Nunca agent_* en el glue de producto"] }
+    {
+      "dot": "cyan",
+      "title": "Comandos",
+      "items": [
+        "cli.sh /ABS/PROJECT inspect --unique",
+        "cli.sh /ABS/PROJECT flow --flow=boot_smoke.json --fail-on-error",
+        "capture y flow: ventana. Nunca godot -s /tmp/*.gd"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "res://agent/",
+      "items": [
+        "flows: clicks de jugador; try_click + repeat si el botón llega tarde",
+        "harness: call() a _métodos que el juego ya tiene. out/: PNG + AGENT_*"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Contrato",
+      "items": [
+        "Sin OK, el playtester para. SCRIPT ERROR = FAIL aunque el click ande",
+        "Helpers nunca en src/. agent_* en el glue = FAIL"
+      ]
+    }
   ]
 }

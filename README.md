@@ -8,10 +8,9 @@ El título vive en **otro** proyecto. Este repo instala el plugin, las skills, e
 
 ## Mapa
 
-[![Mapa del módulo](docs/architecture.png#gh-light-mode-only)](docs/architecture.html)
-[![Mapa del módulo](docs/architecture-dark.png#gh-dark-mode-only)](docs/architecture.html)
+Mapa interactivo del playtest: https://joelnicolass.github.io/godot-studio-playtest/
 
-GitHub muestra una captura. El mapa vivo es [`docs/architecture.html`](docs/architecture.html): abrilo en el navegador (búsqueda, rutas, tema, Present). Fuente: [`docs/architecture.json`](docs/architecture.json).
+Fuente: [`docs/architecture.json`](docs/architecture.json).
 
 ## Qué problema resuelve
 
@@ -144,7 +143,7 @@ agents/studio-playtester.md
 commands/agent-kit.md
 example/                          # demo Godot 4.7
 experimental/agent-flow-editor/
-docs/                             # mapa Archify (HTML + PNG)
+docs/                             # mapa Archify → GitHub Pages
 install.sh
 ```
 
