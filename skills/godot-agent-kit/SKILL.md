@@ -4,12 +4,13 @@ description: >-
   Drives a Godot 4 project with the AgentKit CLI: viewport capture,
   click/type/press flows, node inspect, HTTP fetch, PNG diff. Use when
   capturing the game, writing res://agent/ flows or harnesses, or when
-  tempted to add playtest helpers to src/. Not an MCP.
+  tempted to add playtest helpers or test scenes outside res://agent/.
+  Not an MCP.
 ---
 
 # AgentKit
 
-Addon `addons/agent_kit/` in the Godot project. Zero gameplay. The agent talks to Godot via CLI; `AGENT_OK` / `AGENT_FAIL` are the contract. JSON, harnesses and dumps live in **`res://agent/`** — not in the addon, not in `src/`.
+Addon `addons/agent_kit/` in the Godot project. Zero gameplay. The agent talks to Godot via CLI; `AGENT_OK` / `AGENT_FAIL` are the contract. **Everything** the agent creates for AgentKit lives in **`res://agent/`** — flows, harness scripts, fixture scenes, dumps. Not in the addon. Not in `src/` / `scenes/` / `tests/`.
 
 ## When to use
 
@@ -59,10 +60,12 @@ Grep: `AGENT_OK`, `AGENT_FAIL`, `AGENT_SHOT=`, `AGENT_PRINT`, `AGENT_CLICK`, `AG
 
 ## Rules
 
-1. Flows in `res://agent/flows/*.json`. Steps: [flows.md](flows.md).
-2. Helpers only in `res://agent/harness/*.gd`. Read [harness.md](harness.md) **before** editing a product `.gd`.
-3. Do not add spawn / force-state / count / pause helpers to `src/` (`agent_*` or the same role under another name).
-4. The harness **may** `call()` methods the product already has, including `_prefixed` ones. GDScript `_` is not runtime-private.
-5. Long / turn-based UI: `try_click` + `repeat`, not a hard `click` on a disabled button.
+1. Before **new** playtest files: publish `PLAYTEST_PLAN` (files + why + tree) and wait for `PLAN_OK`. Template: [plan.md](../godot-playtest/plan.md).
+2. Flows in `res://agent/flows/*.json`. Steps: [flows.md](flows.md).
+3. Helpers only in `res://agent/harness/*.gd`. Read [harness.md](harness.md) **before** writing any `.gd`. Never edit product `.gd` / `.tscn` for the flow. Fixture worlds: `res://agent/fixtures/`.
+4. Do not add spawn / force-state / count / pause helpers — or test scenes — outside `agent/` (`agent_*` or the same role under another name).
+5. The harness **may** `call()` methods the product already has, including `_prefixed` ones. GDScript `_` is not runtime-private.
+6. Long / turn-based UI: `try_click` + `repeat`, not a hard `click` on a disabled button.
+7. `git diff --name-only` after the playtest must stay under `agent/`.
 
 Optional visual editor (not in `./install.sh`): `experimental/agent-flow-editor/` (`pnpm install` && `pnpm dev`).

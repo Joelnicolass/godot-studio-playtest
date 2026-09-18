@@ -14,7 +14,7 @@ pnpm install
 pnpm dev
 ```
 
-Abrí http://localhost:5173. Por defecto se bindea a `example/` del kit.
+Abrí http://localhost:5173. Por defecto se bindea a `example/` del kit. En el canvas: rueda para zoom, `+` / `−` / porcentaje en la barra (click al % resetea).
 
 1. **Scan scenes** — lee `.tscn` (`unique_name_in_owner`) y `[input]` de `project.godot`.
 2. **Live inspect** — corre `cli.sh inspect --unique` + `info` (nodos vivos + acciones built-in).
@@ -43,5 +43,5 @@ El cable **out** (claro) es el orden. Un solo camino desde Flow. Repeat anida el
 
 ## Fuera de alcance (por ahora)
 
-- Undo rico, multiplayer de edición.
+- Undo rico, multiplayer de edición, pinch en trackpad más fino que la rueda.
 - No reemplaza un playtest humano.

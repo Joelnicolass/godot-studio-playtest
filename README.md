@@ -18,7 +18,7 @@ Un agente que “prueba” el juego suele:
 
 1. Tirar `godot -s /tmp/capture.gd` y romper autoloads (`class_name` se compila **antes**).
 2. Inventar un PNG o un árbol de nodos de memoria.
-3. Meter `agent_setup()` / spawn / forzar estado en el glue de producto.
+3. Meter `agent_setup()`, una escena `test_*.tscn` o spawn en el glue de producto.
 
 Acá el contrato es el contrario: el agente habla con Godot por CLI, el flow es JSON, y los helpers viven en `res://agent/`.
 
@@ -27,7 +27,7 @@ flowchart TB
   subgraph before [Sin AgentKit]
     a1["godot -s /tmp/*.gd"]
     a2[PNG inventado]
-    a3["agent_* en src/"]
+    a3["test.tscn / agent_* en scenes/"]
     a1 --> fail[Autoloads rotos / evidencia falsa]
     a2 --> fail
     a3 --> fail
@@ -54,21 +54,24 @@ Cursor distingue **skill** (procedimiento que el agente carga), **command** (pro
 | Skill `godot-playtest` | `skills/godot-playtest/` | Cómo ejercer un slice **después** de que el usuario acepte. |
 | Command `/agent-kit` | `commands/agent-kit.md` | Atajo humano: captura / flow / inspect ya. |
 | Subagente `studio-playtester` | `agents/studio-playtester.md` | Corre el binario y devuelve PASS/FAIL. No escribe producto. |
-| Workspace | `res://agent/` en **tu** juego | `flows/`, `harness/`, `out/`. Lo crea el instalador. |
+| Workspace | `res://agent/` en **tu** juego | `flows/`, `harness/`, `fixtures/`, `out/`. Lo crea el instalador. **Cero** archivos de playtest fuera. |
 | Editor experimental | `experimental/agent-flow-editor/` | Cables → el mismo JSON. No entra en `./install.sh`. |
 
 El grafo de esas piezas está en [Mapa](#mapa).
 
 ## Flujo de playtest
 
-El playtest **no** arranca solo. Hace falta OK explícito.
+El playtest **no** arranca solo. Hace falta OK explícito. **Nada** del agente para AgentKit sale de `res://agent/` (ni una escena `test_` en `scenes/`).
 
 ```mermaid
 flowchart TD
   ask{¿Playtest de este slice?}
   ask -->|no| stop[No se lanza Godot]
   ask -->|sí| inspect[inspect --unique]
-  inspect --> flow[JSON en res://agent/flows]
+  inspect --> plan[PLAYTEST_PLAN: archivos + por qué + tree]
+  plan --> okp{¿PLAN_OK?}
+  okp -->|no| wait[Esperar]
+  okp -->|sí| flow["solo res://agent/ : flows, harness, fixtures, out"]
   flow --> clicks{¿Se arma con clicks?}
   clicks -->|sí| run["cli.sh flow --fail-on-error"]
   clicks -->|no| harness["harness: call() a métodos que ya existen"]
@@ -79,10 +82,11 @@ flowchart TD
 Reglas cortas:
 
 1. Ejercé **todos** los criterios del slice, no una muestra.
-2. Helpers solo en `res://agent/harness/`. Nunca `agent_*` en `src/`.
-3. El harness **puede** `call("_on_play")`: en GDScript `_` no es privado de runtime.
-4. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
-5. Un `SCRIPT ERROR` es FAIL aunque el botón se haya podido pulsar.
+2. Antes de generar código de playtest: plan + tree al usuario o al agente padre. Esperá OK.
+3. Helpers, JSON, fixtures y dumps **solo** en `res://agent/`. Nunca `agent_*` ni escenas de test en `src/` / `scenes/`.
+4. El harness **puede** `call("_on_play")`: en GDScript `_` no es privado de runtime.
+5. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
+6. Un `SCRIPT ERROR` es FAIL aunque el botón se haya podido pulsar.
 
 ## Instalar Cursor
 
@@ -131,14 +135,14 @@ pnpm install
 pnpm dev
 ```
 
-http://localhost:5173 — mismo JSON que `--agent=flow`. Detalle: [`experimental/agent-flow-editor/README.md`](experimental/agent-flow-editor/README.md).
+http://localhost:5173 — mismo JSON que `--agent=flow`. Zoom con rueda o `+` / `−` en la barra. Detalle: [`experimental/agent-flow-editor/README.md`](experimental/agent-flow-editor/README.md).
 
 ## Layout
 
 ```
 addons/agent_kit/                 # plugin Godot (fuente)
 skills/godot-agent-kit/           # CLI + harness
-skills/godot-playtest/            # playtest humano
+skills/godot-playtest/            # playtest humano + plan.md
 agents/studio-playtester.md
 commands/agent-kit.md
 example/                          # demo Godot 4.7

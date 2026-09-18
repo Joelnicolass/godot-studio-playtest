@@ -1,4 +1,5 @@
-import Canvas from "./components/Canvas.jsx";
+import { useRef, useState } from "react";
+import Canvas, { ZOOM_STEP } from "./components/Canvas.jsx";
 import Inspector from "./components/Inspector.jsx";
 import Palette from "./components/Palette.jsx";
 import Toolbar from "./components/Toolbar.jsx";
@@ -9,6 +10,8 @@ import { useGodotProject } from "./hooks/useGodotProject.js";
 export default function App() {
   const graph = useFlowGraph();
   const godot = useGodotProject();
+  const [zoom, setZoom] = useState(1);
+  const canvasRef = useRef(null);
 
   function pickUnique(item) {
     if (!graph.current || !kindUsesNode(graph.current.kind)) {
@@ -48,12 +51,19 @@ export default function App() {
       <div className="stage-wrap">
         <Toolbar
           busy={godot.busy}
+          zoom={zoom}
           onCopy={() => navigator.clipboard.writeText(graph.json)}
           onShowJson={() => graph.setDraft(true)}
           onImport={graph.importText}
           onRun={() => godot.run(graph.spec)}
+          onZoomIn={() => canvasRef.current?.zoomAroundCenter(ZOOM_STEP)}
+          onZoomOut={() => canvasRef.current?.zoomAroundCenter(1 / ZOOM_STEP)}
+          onZoomReset={() => canvasRef.current?.zoomReset()}
         />
         <Canvas
+          ref={canvasRef}
+          zoom={zoom}
+          setZoom={setZoom}
           nodes={graph.nodes}
           setNodes={graph.setNodes}
           edges={graph.edges}

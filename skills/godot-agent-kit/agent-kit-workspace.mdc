@@ -1,17 +1,18 @@
 ---
-description: Playtest AgentKit solo en res://agent/; nunca helpers en src/
-globs: "**/*.gd"
-alwaysApply: false
+description: Todo AgentKit queda en res://agent/; cero archivos de playtest en el producto.
+alwaysApply: true
 ---
 
 # Workspace AgentKit
 
-JSON y helpers de playtest viven en `res://agent/` (`flows/`, `harness/`, `fixtures/`, `out/`). **No** en `src/`, `scenes/` ni glue.
+**Nada** que el agente cree o edite para AgentKit sale de `res://agent/` (`flows/`, `harness/`, `fixtures/`, `out/`). Cero escenas de test, scripts, `.tres` o helpers en `src/`, `scenes/`, `tests/`, glue u otras carpetas del juego.
+
+Antes de crear esos archivos: publicá `PLAYTEST_PLAN` (objetivo, lista de paths + por qué, tree). Esperá `PLAN_OK` / `PLAYTEST_PLAN_OK`. Detalle: skill `godot-playtest` → `plan.md`.
 
 En producto **no** va un método cuyo trabajo, para el flow, sea spawnear, forzar un estado, contar nodos, pausar sistemas o reconstruir el mundo. `func agent_*` está prohibido; el mismo rol con otro nombre también.
 
 El `_` de GDScript es convención, no un lock: el harness **sí** puede `call()` / `callv()` a métodos que el producto **ya** tiene. Eso no justifica crear un método nuevo solo para el flow.
 
-No limpia el producto: `extends` una clase de producto desde `agent/`, `set("_…")` para pisar refs internas, ni una API nueva cuyo único caller sea el flow.
+No limpia el producto: una escena `test_*.tscn` junto al juego, `extends` una clase de producto desde `agent/`, `set("_…")` para pisar refs internas, ni una API nueva cuyo único caller sea el flow.
 
-Setup del slice: `res://agent/harness/*.gd` (`extends Node`, sin `class_name`).
+Setup del slice: `res://agent/harness/*.gd` (`extends Node`, sin `class_name`). Fixtures de run: `res://agent/fixtures/`.

@@ -22,7 +22,7 @@ AgentKit="*res://addons/agent_kit/agent_kit.gd"
 
 Sin `--agent=`, F5 no cambia.
 
-Workspace del **juego**: `res://agent/` (lo crea `install.sh`). JSON, harnesses y PNG van ahí, no en el addon ni en `src/`. Contrato: `skills/godot-agent-kit/harness.md`. El instalador copia `.cursor/rules/agent-kit-workspace.mdc`.
+Workspace del **juego**: `res://agent/` (lo crea `install.sh`). **Todo** lo que el agente cree para AgentKit (JSON, harness, fixtures `.tscn`, PNG) va ahí. Cero escenas de test en `scenes/`. Contrato: `skills/godot-agent-kit/harness.md`. El instalador copia `.cursor/rules/agent-kit-workspace.mdc`.
 
 ## CLI
 

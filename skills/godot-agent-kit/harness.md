@@ -1,17 +1,24 @@
 # Harness AgentKit
 
-Read this **before** writing a playtest helper. Typical failure: the flow cannot set up state with clicks, so setup / force-state / count / pause methods land in `src/`. Prefix `agent_*` or a gameplay-looking name — same contamination. **Who calls it** matters, not the name.
+Read this **before** writing a playtest helper. Typical failure: the flow cannot set up state with clicks, so the agent drops a test scene or `agent_*` into product folders. Prefix `agent_*` or a gameplay-looking name — same contamination. **Who calls it** matters, not the name. **Where the file lives** matters more.
 
-## Where playtest code may live
+Before any new playtest file: publish `PLAYTEST_PLAN` ([plan.md](../godot-playtest/plan.md)). Do not write until `PLAN_OK`.
+
+## Isolation — everything stays in `res://agent/`
+
+AgentKit work **never** leaves that directory. New scripts, packed scenes, Resources, JSON, PNG dumps, suite shells — all of it.
 
 | Path | Playtest? |
 |------|-----------|
 | `res://agent/flows/*.json` | yes |
 | `res://agent/harness/*.gd` | yes (`extends Node`, **no** `class_name`) |
 | `res://agent/fixtures/` | yes (run-only `.tres` / `.tscn`) |
-| `src/`, `scenes/`, product glue | **no** |
+| `res://agent/out/` | yes (CLI PNG; gitignored) |
+| `src/`, `scenes/`, `tests/`, product glue | **no** |
 
-Stop before editing anything outside `res://agent/`. If the change only serves the flow, it belongs in the harness.
+Forbidden even with a “test_” name: `scenes/test_crash.tscn`, `scenes/world/agent_arena.tscn`, `tests/playtest_*.gd`, dummy actors next to the ship. If the flow needs a throwaway world, put the `.tscn` in `res://agent/fixtures/`.
+
+Stop before editing anything outside `res://agent/`. If the change only serves the flow, it belongs in the harness. Product bugs you found while playing are a **report**, not a playtest patch in `scenes/`.
 
 ## Product must not grow playtest APIs
 
@@ -59,16 +66,17 @@ Calling an **existing** `_method` does **not** justify adding `_setup_for_agent`
 
 These do **not** keep the product clean:
 
+- A test scene anywhere except `res://agent/fixtures/`.
 - Extending a product class from `agent/`.
 - Renaming `agent_*` to a gameplay-looking name.
 - Adding a public or new `_private` method only for the flow.
-- `set("_ref", …)` to replace internals, or duplicating a product scene just for the run.
+- `set("_ref", …)` to replace internals, or duplicating a product scene under `scenes/` just for the run.
 
 ## Done check
 
 ```bash
 rg -n "func agent_" src scenes
-git diff --stat -- src scenes
+git diff --name-only
 ```
 
-Zero `func agent_`. The playtest diff must not add product methods unless the **game** already calls that API.
+Zero `func agent_`. Every path in the playtest diff must be under `agent/` (or gitignored `agent/out/`). No product methods unless the **game** already calls that API.

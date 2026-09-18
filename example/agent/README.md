@@ -7,7 +7,7 @@ No es el addon. El plugin vive en `addons/agent_kit/` y **no** guarda JSON ni he
 - `out/` — PNG del run (Godot ignora la carpeta)
 - `run_suite.sh` — corre los casos principales con `--fail-on-error`
 
-Nunca helpers de playtest en `scenes/` (spawn / forzar estado / contar / pausar para el flow). Contrato: `skills/godot-agent-kit/harness.md`. `call()` a `_métodos` que el producto ya tiene es válido.
+**Nada** del agente sale de este directorio: ni escenas de test en `scenes/`, ni scripts junto a los actores. Fixtures de run: `fixtures/`. Contrato: `skills/godot-agent-kit/harness.md`. Antes de archivos nuevos: `PLAYTEST_PLAN` (tree) y OK. `call()` a `_métodos` que el producto ya tiene es válido.
 
 ## Suite F1
 

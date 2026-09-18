@@ -1,34 +1,91 @@
-import { useCallback, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { portPos, uid } from "../graph.js";
 import Cables from "./Cables.jsx";
 import FlowNode from "./FlowNode.jsx";
 
-export default function Canvas({
-  nodes,
-  setNodes,
-  edges,
-  setEdges,
-  selected,
-  setSelected,
-  link,
-  setLink,
-  drag,
-}) {
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 2.5;
+const ZOOM_STEP = 1.15;
+
+function clampZoom(z) {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+}
+
+const Canvas = forwardRef(function Canvas(
+  {
+    nodes,
+    setNodes,
+    edges,
+    setEdges,
+    selected,
+    setSelected,
+    link,
+    setLink,
+    drag,
+    zoom,
+    setZoom,
+  },
+  ref
+) {
   const canvas = useRef(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const panRef = useRef(pan);
   panRef.current = pan;
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
   const panDrag = useRef(null);
   const [panning, setPanning] = useState(false);
 
   function toWorld(e) {
     const rect = canvas.current.getBoundingClientRect();
     const p = panRef.current;
+    const z = zoomRef.current;
     return {
-      x: e.clientX - rect.left - p.x,
-      y: e.clientY - rect.top - p.y,
+      x: (e.clientX - rect.left - p.x) / z,
+      y: (e.clientY - rect.top - p.y) / z,
     };
   }
+
+  function applyZoom(next, cx, cy) {
+    const z = zoomRef.current;
+    const nz = clampZoom(next);
+    if (nz === z) return;
+    const p = panRef.current;
+    const wx = (cx - p.x) / z;
+    const wy = (cy - p.y) / z;
+    setZoom(nz);
+    setPan({ x: cx - wx * nz, y: cy - wy * nz });
+  }
+
+  function zoomAroundCenter(factor) {
+    const el = canvas.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    applyZoom(zoomRef.current * factor, rect.width / 2, rect.height / 2);
+  }
+
+  function zoomReset() {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }
+
+  useImperativeHandle(ref, () => ({
+    zoomAroundCenter,
+    zoomReset,
+  }));
+
+  useEffect(() => {
+    const el = canvas.current;
+    if (!el) return;
+    function onWheel(e) {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
+      applyZoom(zoomRef.current * factor, e.clientX - rect.left, e.clientY - rect.top);
+    }
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
 
   const onMove = useCallback(
     (e) => {
@@ -81,13 +138,18 @@ export default function Canvas({
     }
   }
 
+  const grid = 22 * zoom;
+
   return (
     <div
       className={`canvas${panning ? " panning" : ""}`}
       ref={canvas}
       role="application"
       aria-label="Blueprints"
-      style={{ backgroundPosition: `${pan.x}px ${pan.y}px` }}
+      style={{
+        backgroundSize: `${grid}px ${grid}px`,
+        backgroundPosition: `${pan.x}px ${pan.y}px`,
+      }}
       onPointerMove={onMove}
       onPointerUp={endPointer}
       onPointerCancel={endPointer}
@@ -107,7 +169,7 @@ export default function Canvas({
     >
       <div
         className="world"
-        style={{ transform: `translate(${pan.x}px, ${pan.y}px)` }}
+        style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
       >
         <Cables nodes={nodes} edges={edges} link={link} />
         {nodes.map((node) => (
@@ -132,8 +194,11 @@ export default function Canvas({
         ))}
       </div>
       <div className="banner">
-        Arrastrá el vacío para desplazar · out = next · loop = repeat · Backspace borra
+        Rueda = zoom · arrastrá el vacío para desplazar · out = next · loop = repeat · Backspace borra
       </div>
     </div>
   );
-}
+});
+
+export default Canvas;
+export { ZOOM_STEP };

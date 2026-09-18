@@ -1,10 +1,15 @@
 export default function Toolbar({
   busy,
+  zoom,
   onCopy,
   onShowJson,
   onImport,
   onRun,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
 }) {
+  const percent = Math.round(zoom * 100);
   return (
     <div className="toolbar">
       <button className="run" disabled={busy === "run"} onClick={onRun}>
@@ -25,6 +30,17 @@ export default function Toolbar({
           }}
         />
       </label>
+      <div className="zoom" role="group" aria-label="Zoom">
+        <button type="button" onClick={onZoomOut} aria-label="Alejar">
+          −
+        </button>
+        <button type="button" onClick={onZoomReset} title="Restablecer zoom">
+          {percent}%
+        </button>
+        <button type="button" onClick={onZoomIn} aria-label="Acercar">
+          +
+        </button>
+      </div>
     </div>
   );
 }

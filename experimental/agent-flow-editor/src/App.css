@@ -27,6 +27,10 @@ h1 { font-size: 13px; margin: 0 0 8px; font-weight: 650; }
 .toolbar .run { background: #166534; border-color: #22c55e; font-weight: 650; }
 .toolbar .run:hover { background: #15803d; }
 .toolbar .run:disabled { opacity: 0.6; cursor: wait; }
+.toolbar .zoom {
+  display: flex; gap: 4px; margin-left: auto; align-items: center;
+}
+.toolbar .zoom button { min-width: 36px; text-align: center; }
 .row { display: flex; flex-wrap: wrap; gap: 6px; }
 .row button { width: auto; flex: 1; min-width: 72px; }
 .binder, .run-panel { margin-top: 16px; padding-top: 12px; border-top: 1px solid #27272a; }
