@@ -72,9 +72,9 @@ flowchart TD
   plan --> okp{¿PLAN_OK?}
   okp -->|no| wait[Esperar]
   okp -->|sí| flow["solo res://agent/ : flows, harness, fixtures, out"]
-  flow --> clicks{¿Se arma con clicks?}
+  flow --> clicks{¿Input / click de jugador?}
   clicks -->|sí| run["cli.sh flow --fail-on-error"]
-  clicks -->|no| harness["harness: call() a métodos que ya existen"]
+  clicks -->|no, y no es la acción| harness["reuso hooks; no warp"]
   harness --> run
   run --> report[PASS / FAIL + PNG + AGENT_ERRORS]
 ```
@@ -83,10 +83,12 @@ Reglas cortas:
 
 1. Ejercé **todos** los criterios del slice, no una muestra.
 2. Antes de generar código de playtest: plan + tree al usuario o al agente padre. Esperá OK.
-3. Helpers, JSON, fixtures y dumps **solo** en `res://agent/`. Nunca `agent_*` ni escenas de test en `src/` / `scenes/`.
-4. El harness **puede** `call("_on_play")`: en GDScript `_` no es privado de runtime.
-5. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
-6. Un `SCRIPT ERROR` es FAIL aunque el botón se haya podido pulsar.
+3. Feature aislada: fixture en `res://agent/fixtures/` (packed scenes del producto), no la escena principal salvo que el criterio sea el boot.
+4. Reusá `hooks.gd`. InputMap `press` / `click` como el jugador; no forzar movimiento en código.
+5. Helpers, JSON, fixtures y dumps **solo** en `res://agent/`. Nunca `agent_*` ni escenas de test en `src/` / `scenes/`.
+6. El harness **puede** `call("_on_play")`: en GDScript `_` no es privado de runtime.
+7. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
+8. Un `SCRIPT ERROR` es FAIL aunque el botón se haya podido pulsar.
 
 ## Instalar Cursor
 
@@ -142,7 +144,7 @@ http://localhost:5173 — mismo JSON que `--agent=flow`. Zoom con rueda o `+` / 
 ```
 addons/agent_kit/                 # plugin Godot (fuente)
 skills/godot-agent-kit/           # CLI + harness
-skills/godot-playtest/            # playtest humano + plan.md
+skills/godot-playtest/            # playtest humano + plan.md + evaluate.md
 agents/studio-playtester.md
 commands/agent-kit.md
 example/                          # demo Godot 4.7

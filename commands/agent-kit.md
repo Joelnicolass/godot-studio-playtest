@@ -12,7 +12,7 @@ Load skill `godot-agent-kit`. If `addons/agent_kit/` is missing next to `project
 ./install.sh --addon /ABS/GODOT_ROOT
 ```
 
-**Isolation:** anything you create for AgentKit stays in `res://agent/` (flows, harness, fixtures, out). No test scenes in `scenes/`.
+**Isolation:** anything you create for AgentKit stays in `res://agent/` (flows, harness, fixtures, out). Isolated feature scenes go in `agent/fixtures/` (instance product packed scenes), never `scenes/`. Reuse `hooks.gd`; drive actions with InputMap `press` / `click`, not code-forced motion. How: skill `godot-playtest` → `evaluate.md`.
 
 **Plan:** if you will add or edit those files, publish `PLAYTEST_PLAN` (paths + why + tree) to the user first and wait for OK. Skill `godot-playtest` → `plan.md`. Running an existing flow does not need a plan.
 

@@ -3,11 +3,12 @@
 No es el addon. El plugin vive en `addons/agent_kit/` y **no** guarda JSON ni helpers de playtest.
 
 - `flows/` — JSON de `--agent=flow`
-- `harness/` — GDScript que AgentKit monta **solo** con `--agent=`. Nodo = basename (`hooks.gd` → `hooks`). Sin `class_name`.
+- `fixtures/` — escenas de corte (instancean packed scenes del producto). No la main salvo boot.
+- `harness/` — GDScript que AgentKit monta **solo** con `--agent=`. Nodo = basename (`hooks.gd` → `hooks`). Sin `class_name`. **Reusar** métodos; no un `func` por flow.
 - `out/` — PNG del run (Godot ignora la carpeta)
 - `run_suite.sh` — corre los casos principales con `--fail-on-error`
 
-**Nada** del agente sale de este directorio: ni escenas de test en `scenes/`, ni scripts junto a los actores. Fixtures de run: `fixtures/`. Contrato: `skills/godot-agent-kit/harness.md`. Antes de archivos nuevos: `PLAYTEST_PLAN` (tree) y OK. `call()` a `_métodos` que el producto ya tiene es válido.
+**Nada** del agente sale de este directorio: ni escenas de test en `scenes/`. La acción bajo prueba es `press` / `click` (InputMap), no teletransporte. Contrato: `skills/godot-agent-kit/harness.md` y `skills/godot-playtest/evaluate.md`.
 
 ## Suite F1
 

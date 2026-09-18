@@ -15,4 +15,8 @@ El `_` de GDScript es convención, no un lock: el harness **sí** puede `call()`
 
 No limpia el producto: una escena `test_*.tscn` junto al juego, `extends` una clase de producto desde `agent/`, `set("_…")` para pisar refs internas, ni una API nueva cuyo único caller sea el flow.
 
-Setup del slice: `res://agent/harness/*.gd` (`extends Node`, sin `class_name`). Fixtures de run: `res://agent/fixtures/`.
+Setup del slice: `res://agent/harness/*.gd` (`extends Node`, sin `class_name`). **Reusá** métodos de `hooks.gd`; no un `func` por flow.
+
+Escena de una feature aislada: `res://agent/fixtures/` (instancear packed scenes del producto). No la main salvo que el criterio sea el boot.
+
+La acción bajo prueba: `press` / `click` como el jugador. No teletransportar ni asignar `velocity` en el harness.

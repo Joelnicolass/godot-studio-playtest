@@ -16,7 +16,7 @@ AgentKit work **never** leaves that directory. New scripts, packed scenes, Resou
 | `res://agent/out/` | yes (CLI PNG; gitignored) |
 | `src/`, `scenes/`, `tests/`, product glue | **no** |
 
-Forbidden even with a “test_” name: `scenes/test_crash.tscn`, `scenes/world/agent_arena.tscn`, `tests/playtest_*.gd`, dummy actors next to the ship. If the flow needs a throwaway world, put the `.tscn` in `res://agent/fixtures/`.
+Forbidden even with a “test_” name: `scenes/test_crash.tscn`, `scenes/world/agent_arena.tscn`, `tests/playtest_*.gd`, dummy actors next to the ship. For an isolated feature, **do** make a throwaway world — in `res://agent/fixtures/` — that instances product packed scenes. Do not launch the main scene unless the criterion is boot/hub. How to choose: [evaluate.md](../godot-playtest/evaluate.md).
 
 Stop before editing anything outside `res://agent/`. If the change only serves the flow, it belongs in the harness. Product bugs you found while playing are a **report**, not a playtest patch in `scenes/`.
 
@@ -57,16 +57,18 @@ Calling an **existing** `_method` does **not** justify adding `_setup_for_agent`
 
 ## Order
 
-1. Clicks / `press` / `wait_until` as a player.
-2. `call.harness` on `res://agent/harness/`.
-3. In the harness: current scene, `%UniqueName`, `find_children`, existing packed scenes, public signals, and `call()` / `callv()` on methods the product already has. Count with `find_children`, not a new getter.
-4. Fixtures in `res://agent/fixtures/`. Do not duplicate world-building.
+1. Isolated fixture in `res://agent/fixtures/` for the feature (not the main scene). JSON `"scene"` points there.
+2. Clicks / InputMap `press` / `wait_until` as a player. Do not teleport or assign `velocity` / `global_position` to fake the action.
+3. Reuse an existing method on `res://agent/harness/hooks.gd`. Add a **generic** helper only if JSON cannot do it. No one-shot `func` per flow; do not let `hooks.gd` become a kitchen sink.
+4. In the harness: current scene, `%UniqueName`, `find_children`, existing packed scenes, public signals, and `call()` / `callv()` on methods the product already has. Count with `find_children`, not a new getter. `call("_on_play")` is for what a button would already do, not physics.
 
 ## Stop
 
 These do **not** keep the product clean:
 
 - A test scene anywhere except `res://agent/fixtures/`.
+- Launching the whole game when a fixture of packed scenes would isolate the criterion.
+- A new harness `func` per JSON, or forcing motion in GDScript instead of InputMap `press`.
 - Extending a product class from `agent/`.
 - Renaming `agent_*` to a gameplay-looking name.
 - Adding a public or new `_private` method only for the flow.

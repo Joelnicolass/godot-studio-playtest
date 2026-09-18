@@ -62,8 +62,8 @@ Grep: `AGENT_OK`, `AGENT_FAIL`, `AGENT_SHOT=`, `AGENT_PRINT`, `AGENT_CLICK`, `AG
 
 1. Before **new** playtest files: publish `PLAYTEST_PLAN` (files + why + tree) and wait for `PLAN_OK`. Template: [plan.md](../godot-playtest/plan.md).
 2. Flows in `res://agent/flows/*.json`. Steps: [flows.md](flows.md).
-3. Helpers only in `res://agent/harness/*.gd`. Read [harness.md](harness.md) **before** writing any `.gd`. Never edit product `.gd` / `.tscn` for the flow. Fixture worlds: `res://agent/fixtures/`.
-4. Do not add spawn / force-state / count / pause helpers — or test scenes — outside `agent/` (`agent_*` or the same role under another name).
+3. Helpers only in `res://agent/harness/*.gd`. Read [harness.md](harness.md) **before** writing any `.gd`. **Reuse** existing hook methods; do not add a one-shot `func` per flow. Never edit product `.gd` / `.tscn` for the flow. Isolated feature worlds: `res://agent/fixtures/` (not the main scene unless the criterion is boot).
+4. Do not add spawn / force-state / count / pause helpers — or test scenes — outside `agent/` (`agent_*` or the same role under another name). Do not fake movement with `velocity` / `global_position` in the harness: use InputMap `press` / `click`.
 5. The harness **may** `call()` methods the product already has, including `_prefixed` ones. GDScript `_` is not runtime-private.
 6. Long / turn-based UI: `try_click` + `repeat`, not a hard `click` on a disabled button.
 7. `git diff --name-only` after the playtest must stay under `agent/`.

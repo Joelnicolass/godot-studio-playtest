@@ -17,13 +17,15 @@ Only after the user **agreed** to this playtest. Do not assume yes.
 
 If you will **create or edit** flows, harnesses or fixtures: stop and publish `PLAYTEST_PLAN` to the user or the parent agent — objective, each file and why, architecture tree under `res://agent/` only. Wait for `PLAN_OK` / `PLAYTEST_PLAN_OK`. Template: [plan.md](plan.md). Then write **only** those paths.
 
+How to choose the cut: [evaluate.md](evaluate.md) — isolated fixture (not main scene), reuse hooks, player InputMap not code-forced motion.
+
 Do not invent `scenes/test_*.tscn` or helpers beside product actors. Isolation: [harness.md](../godot-agent-kit/harness.md).
 
 ## 1. What to exercise
 
 **All** acceptance criteria of **this** slice (the user request; FEATURES/RFC only if the game already has them). Not a sample of 3–7. If it does not fit in ~15 steps, the slice was too big: cover it and list what was left out. Each step must **fail in view** if the bug remains.
 
-If `addons/agent_kit/` exists: `inspect --unique`, write the flow in `res://agent/flows/`. Helpers only in `res://agent/harness/`. Fixture `.tscn` only in `res://agent/fixtures/`. The harness **may** `call()` methods the product already has, including `_prefixed` ones. Nothing AgentKit-related leaves `res://agent/`.
+If `addons/agent_kit/` exists: `inspect --unique`, write the flow in `res://agent/flows/`. For an isolated feature, point `"scene"` at `res://agent/fixtures/…` (instance product packed scenes). Helpers only in `res://agent/harness/` — **reuse** existing hook methods; do not grow a kitchen-sink `hooks.gd`. Drive the action with InputMap `press` / `click` as the player would; do not teleport or set `velocity` in the harness. The harness **may** `call()` methods the product already has, including `_prefixed` ones. Nothing AgentKit-related leaves `res://agent/`.
 
 ## 2. Launch
 
@@ -50,7 +52,7 @@ If the addon is missing, temporary fallback: [capture.md](capture.md). Headless 
 
 ## 4. Report
 
-- Command, scene, JSON if you ran a flow.
+- Command, scene, JSON if you ran a flow. Name the fixture vs main, InputMap actions, and whether hooks were reused.
 - Each criterion / step: PASS / FAIL + evidence (PNG, `AGENT_PRINT`, console).
 - Console: `AGENT_ERRORS` and `ERROR:` / `SCRIPT ERROR:` / `WARNING:`. A script error is FAIL.
 - What you could not exercise (no display, missing save, …).
