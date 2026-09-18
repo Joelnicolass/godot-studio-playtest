@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="MatchRules" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/match/match_rules.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+starting_hp = 1
+rail_speed = 24.0
+steer_speed = 16.0
+strafe_min = Vector2(-7, -1)
+strafe_max = Vector2(7, 5)

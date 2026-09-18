@@ -1,0 +1,23 @@
+{
+	"wait_first": 0.8,
+	"steps": [
+		{
+			"repeat": {
+				"times": 20,
+				"until": { "node": "%Ship", "visible_in_tree": true },
+				"steps": [
+					{ "try_click": "%PlaySolo" },
+					{ "wait": 0.15 }
+				]
+			}
+		},
+		{ "assert": { "node": "%CrashBanner", "visible": false } },
+		{ "press": { "name": "move_up", "hold": 0.22 } },
+		{ "wait": 3.0 },
+		{ "print": { "node": "%Ship", "prop": "position" } },
+		{ "print": { "node": "%HpLabel", "prop": "text" } },
+		{ "assert": { "node": "%CrashBanner", "visible": false } },
+		{ "assert": { "node": "%HpLabel", "text_contains": "HP 1" } },
+		{ "shot": "fly_over_01.png" }
+	]
+}

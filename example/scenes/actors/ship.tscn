@@ -1,0 +1,58 @@
+[gd_scene load_steps=10 format=3 uid="uid://cshipactor0001"]
+
+[ext_resource type="Script" path="res://scenes/actors/ship.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://chealthcomp001" path="res://scenes/components/health.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://churtbox3d001" path="res://scenes/components/hurtbox_3d.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://crailmotor0001" path="res://scenes/components/rail_motor.tscn" id="4"]
+[ext_resource type="PackedScene" uid="uid://cshipsteer0001" path="res://scenes/components/ship_steer.tscn" id="5"]
+[ext_resource type="Resource" path="res://resources/match/match_rules.tres" id="6"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_hull"]
+size = Vector3(1.2, 0.6, 1.8)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hull"]
+size = Vector3(1.2, 0.6, 1.8)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hull"]
+albedo_color = Color(0.35, 0.75, 0.95, 1)
+
+[node name="Ship" type="CharacterBody3D"]
+collision_layer = 1
+collision_mask = 0
+motion_mode = 1
+process_physics_priority = 20
+script = ExtResource("1")
+health = NodePath("Health")
+hurtbox = NodePath("Hurtbox3D")
+rail_motor = NodePath("RailMotor")
+ship_steer = NodePath("ShipSteer")
+rules = ExtResource("6")
+
+[node name="Hull" type="MeshInstance3D" parent="."]
+unique_name_in_owner = true
+mesh = SubResource("BoxMesh_hull")
+surface_material_override/0 = SubResource("StandardMaterial3D_hull")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_hull")
+
+[node name="Health" parent="." instance=ExtResource("2")]
+
+[node name="Hurtbox3D" parent="." instance=ExtResource("3")]
+
+[node name="RailMotor" parent="." instance=ExtResource("4")]
+process_physics_priority = 10
+actor = NodePath("..")
+rules = ExtResource("6")
+
+[node name="ShipSteer" parent="." instance=ExtResource("5")]
+actor = NodePath("..")
+rules = ExtResource("6")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 12)
+current = true
+
+[node name="F6Light" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 4, 8, 6)
+shadow_enabled = false

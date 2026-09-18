@@ -1,0 +1,24 @@
+{
+	"wait_first": 0.8,
+	"steps": [
+		{
+			"repeat": {
+				"times": 20,
+				"until": { "node": "%Ship", "visible_in_tree": true },
+				"steps": [
+					{ "try_click": "%PlaySolo" },
+					{ "wait": 0.15 }
+				]
+			}
+		},
+		{ "assert": { "node": "%CrashBanner", "visible": false } },
+		{ "assert": { "node": "%HpLabel", "text_contains": "HP 1" } },
+		{ "press": { "name": "move_left", "hold": 0.2 } },
+		{ "wait": 3.0 },
+		{ "print": { "node": "%Ship", "prop": "position" } },
+		{ "print": { "node": "%HpLabel", "prop": "text" } },
+		{ "assert": { "node": "%CrashBanner", "visible": false } },
+		{ "assert": { "node": "%HpLabel", "text_contains": "HP 1" } },
+		{ "shot": "dodge_left_01.png" }
+	]
+}

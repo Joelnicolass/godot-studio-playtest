@@ -2,12 +2,28 @@
 
 No es el addon. El plugin vive en `addons/agent_kit/` y **no** guarda JSON ni helpers de playtest.
 
-- `flows/` — JSON de `--agent=flow`. `cli.sh . flow --flow=boot_smoke.json --fail-on-error`
+- `flows/` — JSON de `--agent=flow`
 - `harness/` — GDScript que AgentKit monta **solo** con `--agent=`. Nodo = basename (`hooks.gd` → `hooks`). Sin `class_name`.
-- `out/` — PNG del run (Godot ignora esta carpeta).
+- `out/` — PNG del run (Godot ignora la carpeta)
+- `run_suite.sh` — corre los casos principales con `--fail-on-error`
 
-Nunca helpers de playtest en `src/` (spawn / forzar estado / contar / pausar para el flow; `agent_*` ni el mismo rol con otro nombre). Contrato: `skills/godot-agent-kit/harness.md`. Si hace falta un setup que no está en la UI, **solo** en el harness. `call()` a `_métodos` que el producto ya tiene es válido (`_` no es privado de runtime):
+Nunca helpers de playtest en `scenes/` (spawn / forzar estado / contar / pausar para el flow). Contrato: `skills/godot-agent-kit/harness.md`. `call()` a `_métodos` que el producto ya tiene es válido.
 
-```json
-{ "call": { "harness": "hooks", "method": "play_via_private" } }
+## Suite F1
+
+| Flow | Caso |
+|------|------|
+| `boot_ready.json` | Boot: **Jugar** habilitado, `%AfterPlay` oculto |
+| `enter_run.json` | **Jugar** entra a la carrera: `%Ship`, cubo del rail, HP 1, sin banner |
+| `crash_center.json` | Sin input: choca `%ObstacleOnRail` → **Chocaste**, HP 0 |
+| `dodge_left.json` | `move_left` breve: pasa el cubo del centro, sigue HP 1 |
+| `fly_over.json` | `move_up` breve: pasa por encima, sigue HP 1 |
+| `crash_side.json` | `move_left` largo: choca el cubo lateral → **Chocaste** |
+| `call_private_harness.json` | Harness `call("_on_play")` → misma carrera |
+| `call_private_json.json` | Step JSON `call` a `_on_play` |
+
+`obstacle_crash.json` es el mismo caso que `crash_center.json`. `boot_smoke.json` es el mismo que `boot_ready.json`.
+
+```bash
+GODOT="$HOME/Downloads/Godot-7.app/Contents/MacOS/Godot" example/agent/run_suite.sh
 ```

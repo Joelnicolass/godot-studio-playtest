@@ -1,10 +1,17 @@
 {
 	"wait_first": 0.6,
 	"steps": [
-		{ "assert": { "node": "%AfterPlay", "visible": false } },
+		{ "assert": { "node": "%PlaySolo", "disabled": false } },
 		{ "call": { "node": ".", "method": "_on_play" } },
-		{ "wait": 0.2 },
-		{ "assert": { "node": "%AfterPlay", "visible": true } },
-		{ "assert": { "node": "%PlaySolo", "disabled": true } }
+		{
+			"repeat": {
+				"times": 25,
+				"until": { "node": "%Ship", "visible_in_tree": true },
+				"steps": [{ "wait": 0.1 }]
+			}
+		},
+		{ "assert": { "node": "%Ship", "visible_in_tree": true } },
+		{ "assert": { "node": "%ObstacleOnRail", "visible_in_tree": true } },
+		{ "shot": "call_private_json_01.png" }
 	]
 }

@@ -1,18 +1,23 @@
 {
-	"wait_first": 0.6,
+	"wait_first": 0.8,
 	"steps": [
+		{ "shot": "enter_run_01_boot.png" },
 		{ "assert": { "node": "%PlaySolo", "disabled": false } },
-		{ "call": { "harness": "hooks", "method": "play_via_private" } },
 		{
 			"repeat": {
-				"times": 25,
+				"times": 20,
 				"until": { "node": "%Ship", "visible_in_tree": true },
-				"steps": [{ "wait": 0.1 }]
+				"steps": [
+					{ "try_click": "%PlaySolo" },
+					{ "wait": 0.15 }
+				]
 			}
 		},
 		{ "assert": { "node": "%Ship", "visible_in_tree": true } },
 		{ "assert": { "node": "%ObstacleOnRail", "visible_in_tree": true } },
+		{ "assert": { "node": "%CrashBanner", "visible": false } },
 		{ "print": { "node": "%HpLabel", "prop": "text" } },
-		{ "shot": "call_private_harness_01.png" }
+		{ "assert": { "node": "%HpLabel", "text_contains": "HP 1" } },
+		{ "shot": "enter_run_02.png" }
 	]
 }

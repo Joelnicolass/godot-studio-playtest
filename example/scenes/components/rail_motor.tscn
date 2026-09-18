@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://crailmotor0001"]
+
+[ext_resource type="Script" path="res://scenes/components/rail_motor.gd" id="1"]
+
+[node name="RailMotor" type="Node"]
+process_physics_priority = 10
+script = ExtResource("1")
