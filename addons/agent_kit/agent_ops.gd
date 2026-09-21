@@ -185,9 +185,11 @@ static func input_action_names() -> Array:
 static func press_action(action: String, pressed: bool = true) -> String:
 	var name := action.strip_edges()
 	if name.is_empty():
-		return "missing InputMap action"
+		return "unmapped input: empty action (product bug; do not send keycodes)"
+	if _looks_like_keycode(name):
+		return "unmapped input: %s is a keycode, not an InputMap action (product bug)" % name
 	if not InputMap.has_action(name):
-		return "missing InputMap action %s" % name
+		return "unmapped input: InputMap has no action '%s' (product bug; do not invent keys)" % name
 	var ev := InputEventAction.new()
 	ev.action = name
 	ev.pressed = pressed
@@ -195,6 +197,12 @@ static func press_action(action: String, pressed: bool = true) -> String:
 	Input.parse_input_event(ev)
 	print("AGENT_PRESS ", name, " pressed=", pressed)
 	return ""
+
+
+static func _looks_like_keycode(name: String) -> bool:
+	if name.begins_with("KEY_") or name.to_lower().begins_with("keycode"):
+		return true
+	return name.is_valid_int()
 
 
 static func _collect_unique(node: Node, lines: PackedStringArray) -> void:

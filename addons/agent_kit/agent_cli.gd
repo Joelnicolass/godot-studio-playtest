@@ -32,8 +32,10 @@ Flags (after --):
   --threshold=0.02      Diff: per-channel delta 0..1
   --fail-on-error       Fail the verb if Godot logged ERROR / SCRIPT ERROR
 
-Host workspace (not the addon): res://agent/flows JSON, res://agent/harness scripts
-(mounted only when --agent= is set). Do not add agent_* methods to src/.
+Host workspace (not the addon): res://agent/flows, harness, fixtures, out.
+press only accepts an InputMap action that already exists in the editor.
+A missing action is a product bug — do not send keycodes. Harness must not
+move actors or inject keys. Do not add agent_* methods to src/.
 
 Do not use `godot -s /tmp/foo.gd extends SceneTree` for captures: class_name
 scripts compile before autoloads (PortraitCache / DraftCopy missing).

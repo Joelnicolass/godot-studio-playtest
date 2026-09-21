@@ -1,40 +1,43 @@
-# Plan de playtest (antes de archivos)
+# Plan de playtest
 
-Antes de **crear o editar** JSON, harness, fixtures o cualquier archivo de AgentKit, publicá el plan al usuario o al agente que te invocó. No escribas el disco hasta que haya `PLAN_OK` (humano: un OK corto; subagente: el prompt padre incluye `PLAYTEST_PLAN_OK`).
+No esperes OK para jugar. Validá los límites de [evaluate.md](evaluate.md).
 
-Correr un flow **ya existente** o `inspect` sin archivos nuevos no exige este gate. Capturas van a `res://agent/out/` (gitignored).
+Si falta el contexto para armar el escenario, devolvé **solo** esto a quien te invocó y no escribas archivos. Cuando te relance con `PLAYTEST_SETUP`, usá esas condiciones y seguí.
 
-## Qué publicar
+```
+NEED_SETUP
+criterio: esquivar el cubo del centro
+falta:
+- packed scenes: …
+- estado inicial: posición, .tres que ya existe, qué nodos están
+- acción o control: …
+- observable al final: …
+```
 
-1. **Objetivo** — qué criterios del slice se van a ejercer.
-2. **Corte** — fixture aislada vs main; hooks que se **reusan**; acciones de InputMap del jugador (no warp).
-3. **Archivos** — path + por qué existe cada uno (un renglón).
-4. **Árbol** — solo `res://agent/`. Nada fuera.
+Quien llama (otro agente o un humano) responde así:
 
-Plantilla:
+```
+PLAYTEST_SETUP
+escenas: res://scenes/actors/ship.tscn, res://scenes/actors/obstacle.tscn
+estado: nave en el origen, cubo en (0, 0, -28), match_rules.tres del producto
+accion: move_left
+observable: %HpLabel sigue en HP 1 y %CrashBanner oculto
+```
+
+El árbol va en el informe, después de poder jugar. No frena el trabajo si las condiciones ya están.
 
 ```
 PLAYTEST_PLAN
 objetivo: …
-escena: agent/fixtures/rail_dodge.tscn (no main: el criterio es esquivar, no el boot)
-input: press move_left / move_up (InputMap del jugador)
-hooks: reuso play_via_private — sin func nueva
-por qué no alcanza con clicks solos: … (o: alcanza)
+escena: agent/fixtures/rail_dodge.tscn (no main: el criterio es esquivar)
+input: press move_left (ya está en el InputMap; si no, BUG)
+hooks: ninguno — el JSON alcanza
+límites: solo agent/; cero reglas de negocio
 
-archivos:
-- agent/fixtures/rail_dodge.tscn — ship + un cubo; packed scenes del producto
-- agent/flows/dodge_left.json — press move_left, assert HP
-- agent/harness/hooks.gd — sin cambios (reuso)
-
-árbol:
 agent/
-├── flows/
-│   └── dodge_left.json
-├── harness/
-│   └── hooks.gd
-├── fixtures/
-│   └── rail_dodge.tscn
+├── flows/dodge_left.json
+├── fixtures/rail_dodge.tscn
 └── out/
 ```
 
-Si el padre relanza con `PLAYTEST_PLAN_OK`, implementá **ese** árbol. No agregues escenas de test en `scenes/` “porque era más fácil”. Criterio de corte: [evaluate.md](evaluate.md).
+Si una acción no está mapeada en el editor, no armes el flow con un keycode: reportá el bug y parate.

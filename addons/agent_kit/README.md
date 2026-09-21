@@ -58,9 +58,9 @@ Líneas para grep: `AGENT_OK`, `AGENT_FAIL`, `AGENT_SHOT=`, `AGENT_PRINT`, `AGEN
 }
 ```
 
-`click` emite `pressed` en el `BaseButton`. `%Nombre` se busca en la escena y en hijos. `press` es InputMap. `--fail-on-error` falla si el engine logueó ERROR / SCRIPT ERROR. `--flow=boot_smoke.json` busca en `res://agent/flows/`. `--out=` default: `res://agent/out`.
+`click` emite `pressed` en el `BaseButton`. `%Nombre` se busca en la escena y en hijos. `press` solo acepta una acción que **ya** está en el InputMap; si no existe, falla con `unmapped input` (bug de producto, no un keycode). `--fail-on-error` falla si el engine logueó ERROR / SCRIPT ERROR. `--flow=boot_smoke.json` busca en `res://agent/flows/`. `--out=` default: `res://agent/out`.
 
-Setup que no está en la UI → `res://agent/harness/` (`extends Node`, sin `class_name`). El harness puede `call()` métodos que el producto **ya** tiene, también `_prefixed`:
+El playtest de una feature no usa `call` para jugar: el jugador pulsa el botón o una acción mapeada. El harness no mueve actores. `call("_on_play")` en el example solo demuestra que `_` no es privado de runtime.
 
 ```json
 { "call": { "harness": "hooks", "method": "play_via_private" } }
@@ -91,7 +91,7 @@ Editor experimental: `experimental/agent-flow-editor/` (Vite, **pnpm**). No entr
 
 ## Qué no es
 
-No es un runner de tests unitarios. No es un MCP. No es un motor de juego. Un playtest de slice sigue pidiendo OK del usuario.
+No es un runner de tests unitarios. No es un MCP. No es un motor de juego. El playtest no pide OK: solo escribe en `res://agent/` y no cambia reglas de negocio.
 
 ## Versión
 

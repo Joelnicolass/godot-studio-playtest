@@ -2,30 +2,32 @@
 name: godot-playtest
 description: >-
   Launches the Godot 4 binary and exercises acceptance criteria like a
-  player (run scene, click, screenshot, AgentKit flow). Use when the user
-  agreed to a playtest, studio-playtester is invoked, or when writing
-  AgentKit flows or harnesses. Never create playtest files outside res://agent/.
+  player (run scene, click, screenshot, AgentKit flow). Use when a slice
+  needs a playtest or studio-playtester is invoked. Does not wait for
+  permission. Returns NEED_SETUP to the caller when the starting context
+  is missing. Never creates playtest files outside res://agent/. Never
+  edits business rules.
 ---
 
 # Playtest
 
 Run the **game** and check this slice as a player would. Not unit tests.
 
-Only after the user **agreed** to this playtest. Do not assume yes.
+Do not wait for permission to playtest. Validate limits yourself ([evaluate.md](evaluate.md)).
 
-## 0. Plan before files
+If the slice needs a starting context you cannot see in the product scene and the caller did not send `PLAYTEST_SETUP`, return only `NEED_SETUP` to whoever invoked you (agent or human) and stop. Template: [plan.md](plan.md). When they relaunch with `PLAYTEST_SETUP`, build the fixture from those initial conditions and continue.
 
-If you will **create or edit** flows, harnesses or fixtures: stop and publish `PLAYTEST_PLAN` to the user or the parent agent — objective, each file and why, architecture tree under `res://agent/` only. Wait for `PLAN_OK` / `PLAYTEST_PLAN_OK`. Template: [plan.md](plan.md). Then write **only** those paths.
+## 0. Self-check
 
-How to choose the cut: [evaluate.md](evaluate.md) — isolated fixture (not main scene), reuse hooks, player InputMap not code-forced motion.
+You may create flows, fixtures and harness files under `res://agent/` only. Do not edit business rules (`scenes/`, `src/`, resources, `project.godot`, InputMap). Put the tree in the report; do not stop for `PLAN_OK`. Template: [plan.md](plan.md).
 
-Do not invent `scenes/test_*.tscn` or helpers beside product actors. Isolation: [harness.md](../godot-agent-kit/harness.md).
+Player actions are InputMap `press` or a real UI control (`click` / `type`). A missing action is a product bug — do not send keycodes and do not add the mapping. The harness does not move or force state.
 
 ## 1. What to exercise
 
 **All** acceptance criteria of **this** slice (the user request; FEATURES/RFC only if the game already has them). Not a sample of 3–7. If it does not fit in ~15 steps, the slice was too big: cover it and list what was left out. Each step must **fail in view** if the bug remains.
 
-If `addons/agent_kit/` exists: `inspect --unique`, write the flow in `res://agent/flows/`. For an isolated feature, point `"scene"` at `res://agent/fixtures/…` (instance product packed scenes). Helpers only in `res://agent/harness/` — **reuse** existing hook methods; do not grow a kitchen-sink `hooks.gd`. Drive the action with InputMap `press` / `click` as the player would; do not teleport or set `velocity` in the harness. The harness **may** `call()` methods the product already has, including `_prefixed` ones. Nothing AgentKit-related leaves `res://agent/`.
+If `addons/agent_kit/` exists: `inspect --unique` and `info` (InputMap) first. Use the product scene when the criterion already starts there. Otherwise `"scene"` is `res://agent/fixtures/…` built from `PLAYTEST_SETUP` (product packed scenes, initial state only). Drive the action with an InputMap `press` that already exists, or `click` / `type` on the control the player would use. Do not `call` a method to skip that. Do not teleport or set `velocity`. If `press` returns `unmapped input`, report a product bug and stop. Nothing you create leaves `res://agent/`.
 
 ## 2. Launch
 

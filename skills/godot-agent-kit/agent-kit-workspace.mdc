@@ -1,22 +1,16 @@
 ---
-description: Todo AgentKit queda en res://agent/; cero archivos de playtest en el producto.
+description: Todo AgentKit queda en res://agent/; el playtester no espera OK y no toca reglas de negocio.
 alwaysApply: true
 ---
 
 # Workspace AgentKit
 
-**Nada** que el agente cree o edite para AgentKit sale de `res://agent/` (`flows/`, `harness/`, `fixtures/`, `out/`). Cero escenas de test, scripts, `.tres` o helpers en `src/`, `scenes/`, `tests/`, glue u otras carpetas del juego.
+El playtest **no** espera permiso para jugar. Si falta el contexto para armar el escenario, devuelve solo `NEED_SETUP` a quien lo invocó (otro agente o un humano) y espera `PLAYTEST_SETUP`. Si la escena del producto ya es la situación, o el setup ya vino, sigue sin preguntar.
 
-Antes de crear esos archivos: publicá `PLAYTEST_PLAN` (objetivo, lista de paths + por qué, tree). Esperá `PLAN_OK` / `PLAYTEST_PLAN_OK`. Detalle: skill `godot-playtest` → `plan.md`.
+**Nada** que cree para AgentKit sale de `res://agent/` (`flows/`, `harness/`, `fixtures/`, `out/`). Cero escenas de test, scripts o `.tres` en `src/`, `scenes/`, `tests/` o glue. Cero cambios a reglas de negocio (`project.godot`, InputMap, resources, scripts de actores).
 
-En producto **no** va un método cuyo trabajo, para el flow, sea spawnear, forzar un estado, contar nodos, pausar sistemas o reconstruir el mundo. `func agent_*` está prohibido; el mismo rol con otro nombre también.
+La acción del jugador es `press` de una acción que **ya** está en el InputMap, o `click` / `type` en el control que usaría. Si no hay acción mapeada: bug de producto. No keycodes (`KEY_*`, números). No agregues la acción para que el flow pase.
 
-El `_` de GDScript es convención, no un lock: el harness **sí** puede `call()` / `callv()` a métodos que el producto **ya** tiene. Eso no justifica crear un método nuevo solo para el flow.
+El harness no mueve, no dispara y no fuerza el estado (`velocity`, `global_position`, `InputEventKey`, `call` para saltear el botón). Si el JSON puede `scene` + `press`, no agregues un `func`.
 
-No limpia el producto: una escena `test_*.tscn` junto al juego, `extends` una clase de producto desde `agent/`, `set("_…")` para pisar refs internas, ni una API nueva cuyo único caller sea el flow.
-
-Setup del slice: `res://agent/harness/*.gd` (`extends Node`, sin `class_name`). **Reusá** métodos de `hooks.gd`; no un `func` por flow.
-
-Escena de una feature aislada: `res://agent/fixtures/` (instancear packed scenes del producto). No la main salvo que el criterio sea el boot.
-
-La acción bajo prueba: `press` / `click` como el jugador. No teletransportar ni asignar `velocity` en el harness.
+Detalle: skill `godot-playtest` → `evaluate.md`.

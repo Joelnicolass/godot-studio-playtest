@@ -12,9 +12,9 @@ Load skill `godot-agent-kit`. If `addons/agent_kit/` is missing next to `project
 ./install.sh --addon /ABS/GODOT_ROOT
 ```
 
-**Isolation:** anything you create for AgentKit stays in `res://agent/` (flows, harness, fixtures, out). Isolated feature scenes go in `agent/fixtures/` (instance product packed scenes), never `scenes/`. Reuse `hooks.gd`; drive actions with InputMap `press` / `click`, not code-forced motion. How: skill `godot-playtest` → `evaluate.md`.
+**Isolation:** anything you create stays in `res://agent/` (flows, harness, fixtures, out). Do not edit business rules or InputMap. Do not wait for user OK — check those limits yourself (`evaluate.md`).
 
-**Plan:** if you will add or edit those files, publish `PLAYTEST_PLAN` (paths + why + tree) to the user first and wait for OK. Skill `godot-playtest` → `plan.md`. Running an existing flow does not need a plan.
+**Play:** use the product scene when the slice already starts there. If the context is missing, return only `NEED_SETUP` to whoever called you (agent or human) and wait for `PLAYTEST_SETUP` — initial conditions, not permission. Then build `agent/fixtures/` from that. Actions are InputMap `press` that already exist, or `click` / `type` on the player’s control. Missing action = product bug (`unmapped input`). No keycodes. No harness func that moves or forces state. Skill `godot-playtest` → `plan.md`.
 
 Do not use `godot -s /tmp/*.gd`. Use:
 
@@ -27,4 +27,4 @@ Set `GODOT=` if the binary is not found. Capture/flow **without** `--headless`. 
 
 Optional cable editor: `experimental/agent-flow-editor/` (`pnpm install` && `pnpm dev`). Same JSON as `--agent=flow`.
 
-A playtest still needs user OK (`godot-playtest`). This is not an MCP.
+A playtest does not wait for user OK. The agent only writes under `res://agent/` and does not change business rules. This is not an MCP.

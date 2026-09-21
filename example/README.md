@@ -2,7 +2,7 @@
 
 Proyecto Godot 4.7 para probar el módulo: boot 2D → carrera 3D tipo Star Fox (cubos placeholder). Unique names: `%PlaySolo`, `%Ship`, `%ObstacleOnRail`, `%CrashBanner`, `%HpLabel`.
 
-El plugin ya está en `addons/agent_kit/` (copia de la fuente del repo). El workspace del flow es `agent/`: **nada** de AgentKit (JSON, harness, fixtures) se escribe en `scenes/`.
+El plugin está en `addons/agent_kit/` como enlace a `../../addons/agent_kit` (una sola fuente). El workspace del flow es `agent/`: **nada** de AgentKit (JSON, harness, fixtures) se escribe en `scenes/`.
 
 La primera vez (clone fresco), importá para registrar `class_name`:
 

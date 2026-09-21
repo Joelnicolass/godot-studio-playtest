@@ -6,11 +6,12 @@ extends RefCounted
 const ROOT := "res://agent"
 const FLOWS := "res://agent/flows"
 const HARNESS := "res://agent/harness"
+const FIXTURES := "res://agent/fixtures"
 const OUT := "res://agent/out"
 
 
 static func ensure_dirs() -> void:
-	for res_dir in [ROOT, FLOWS, HARNESS, OUT]:
+	for res_dir in [ROOT, FLOWS, HARNESS, FIXTURES, OUT]:
 		var abs_path := ProjectSettings.globalize_path(res_dir)
 		DirAccess.make_dir_recursive_absolute(abs_path)
 

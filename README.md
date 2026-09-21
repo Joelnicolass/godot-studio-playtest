@@ -51,9 +51,9 @@ Cursor distingue **skill** (procedimiento que el agente carga), **command** (pro
 |-------|------|-----|
 | Plugin Godot | `addons/agent_kit/` | Autoload + `cli.sh`: capture, flow, inspect, fetch, diff. Cero gameplay. |
 | Skill `godot-agent-kit` | `skills/godot-agent-kit/` | Cómo hablar con el CLI y dónde va el harness. |
-| Skill `godot-playtest` | `skills/godot-playtest/` | Cómo ejercer un slice **después** de que el usuario acepte. |
+| Skill `godot-playtest` | `skills/godot-playtest/` | Cómo ejercer un slice. No espera OK. Solo escribe en `res://agent/`. |
 | Command `/agent-kit` | `commands/agent-kit.md` | Atajo humano: captura / flow / inspect ya. |
-| Subagente `studio-playtester` | `agents/studio-playtester.md` | Corre el binario y devuelve PASS/FAIL. No escribe producto. |
+| Subagente `studio-playtester` | `agents/studio-playtester.md` | Corre el binario y devuelve PASS/FAIL. No toca reglas de negocio. |
 | Workspace | `res://agent/` en **tu** juego | `flows/`, `harness/`, `fixtures/`, `out/`. Lo crea el instalador. **Cero** archivos de playtest fuera. |
 | Editor experimental | `experimental/agent-flow-editor/` | Cables → el mismo JSON. No entra en `./install.sh`. |
 
@@ -61,34 +61,30 @@ El grafo de esas piezas está en [Mapa](#mapa).
 
 ## Flujo de playtest
 
-El playtest **no** arranca solo. Hace falta OK explícito. **Nada** del agente para AgentKit sale de `res://agent/` (ni una escena `test_` en `scenes/`).
+El playtest arranca con la orden de probar el slice. No pide permiso. Si la escena del producto no trae el contexto y quien llamó no mandó las condiciones, devuelve `NEED_SETUP` y espera `PLAYTEST_SETUP`. Quien llama es otro agente o un humano.
 
 ```mermaid
 flowchart TD
-  ask{¿Playtest de este slice?}
-  ask -->|no| stop[No se lanza Godot]
-  ask -->|sí| inspect[inspect --unique]
-  inspect --> plan[PLAYTEST_PLAN: archivos + por qué + tree]
-  plan --> okp{¿PLAN_OK?}
-  okp -->|no| wait[Esperar]
-  okp -->|sí| flow["solo res://agent/ : flows, harness, fixtures, out"]
-  flow --> clicks{¿Input / click de jugador?}
-  clicks -->|sí| run["cli.sh flow --fail-on-error"]
-  clicks -->|no, y no es la acción| harness["reuso hooks; no warp"]
-  harness --> run
-  run --> report[PASS / FAIL + PNG + AGENT_ERRORS]
+  slice[Slice a probar] --> seen{¿La situación ya está en la escena o vino PLAYTEST_SETUP?}
+  seen -->|no| ask[NEED_SETUP al caller]
+  ask --> setup[PLAYTEST_SETUP]
+  seen -->|sí| cut[Escena del producto o fixture]
+  setup --> cut
+  cut --> input{¿La acción está en el InputMap o hay un control?}
+  input -->|no| bug[BUG de producto: input no mapeado]
+  input -->|sí| run["press / click como el jugador"]
+  run --> report[PASS / FAIL + PNG]
 ```
 
 Reglas cortas:
 
 1. Ejercé **todos** los criterios del slice, no una muestra.
-2. Antes de generar código de playtest: plan + tree al usuario o al agente padre. Esperá OK.
-3. Feature aislada: fixture en `res://agent/fixtures/` (packed scenes del producto), no la escena principal salvo que el criterio sea el boot.
-4. Reusá `hooks.gd`. InputMap `press` / `click` como el jugador; no forzar movimiento en código.
-5. Helpers, JSON, fixtures y dumps **solo** en `res://agent/`. Nunca `agent_*` ni escenas de test en `src/` / `scenes/`.
-6. El harness **puede** `call("_on_play")`: en GDScript `_` no es privado de runtime.
-7. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
-8. Un `SCRIPT ERROR` es FAIL aunque el botón se haya podido pulsar.
+2. No esperes permiso. Si falta el contexto, `NEED_SETUP` y pará. El árbol va en el informe cuando ya podés jugar.
+3. Fixture en `res://agent/fixtures/` solo para el estado inicial que el setup nombra. La escena del producto cuando el criterio ya empieza ahí.
+4. Solo acciones ya mapeadas en el editor, o click/type del control. Sin keycodes. Sin `func` que mueva o fuerce el estado.
+5. Cero archivos fuera de `res://agent/`. Cero cambios a InputMap, resources o scripts de juego.
+6. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
+7. Un `SCRIPT ERROR` o `unmapped input` es FAIL.
 
 ## Instalar Cursor
 
@@ -122,7 +118,7 @@ addons/agent_kit/cli.sh /ABS/GODOT_ROOT flow --flow=boot_smoke.json --fail-on-er
 
 ## Demo
 
-[`example/`](example/README.md) es un boot mínimo (`%PlaySolo` → `%AfterPlay`).
+[`example/`](example/README.md) es el slice de prueba (boot → carrera). `example/addons/agent_kit` es un enlace a `addons/agent_kit/`: una sola fuente.
 
 ```bash
 example/addons/agent_kit/cli.sh example flow --flow=boot_smoke.json --fail-on-error

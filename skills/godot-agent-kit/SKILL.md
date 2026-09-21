@@ -20,7 +20,7 @@ Addon `addons/agent_kit/` in the Godot project. Zero gameplay. The agent talks t
 - Understand a scene: `inspect --unique`.
 - About to write `godot -s /tmp/*.gd` → stop, use AgentKit.
 
-A human-style playtest still needs user OK (`godot-playtest`).
+A human-style playtest does **not** wait for user OK. The playtester validates that it only writes under `res://agent/` and does not change business rules (`godot-playtest`).
 
 ## Install
 
@@ -60,11 +60,11 @@ Grep: `AGENT_OK`, `AGENT_FAIL`, `AGENT_SHOT=`, `AGENT_PRINT`, `AGENT_CLICK`, `AG
 
 ## Rules
 
-1. Before **new** playtest files: publish `PLAYTEST_PLAN` (files + why + tree) and wait for `PLAN_OK`. Template: [plan.md](../godot-playtest/plan.md).
+1. Playtest files go under `res://agent/` only. Do **not** wait for permission. If the starting context is missing, return only `NEED_SETUP` to the caller and stop until they send `PLAYTEST_SETUP`. Template: [plan.md](../godot-playtest/plan.md). Cut: [evaluate.md](../godot-playtest/evaluate.md).
 2. Flows in `res://agent/flows/*.json`. Steps: [flows.md](flows.md).
-3. Helpers only in `res://agent/harness/*.gd`. Read [harness.md](harness.md) **before** writing any `.gd`. **Reuse** existing hook methods; do not add a one-shot `func` per flow. Never edit product `.gd` / `.tscn` for the flow. Isolated feature worlds: `res://agent/fixtures/` (not the main scene unless the criterion is boot).
-4. Do not add spawn / force-state / count / pause helpers — or test scenes — outside `agent/` (`agent_*` or the same role under another name). Do not fake movement with `velocity` / `global_position` in the harness: use InputMap `press` / `click`.
-5. The harness **may** `call()` methods the product already has, including `_prefixed` ones. GDScript `_` is not runtime-private.
+3. `press` only if `InputMap` already has that action. Missing action or a keycode (`KEY_A`, `65`) is a **product bug** — do not add the mapping. UI the player would use: `click` / `type`.
+4. Harness only in `res://agent/harness/*.gd`, and only to prepare a scene the JSON cannot. No func that moves, shoots, or forces state. Never edit product `.gd` / `.tscn` / InputMap for the flow. Isolated worlds: `res://agent/fixtures/`.
+5. Do not add spawn / force-state / count / pause helpers outside `agent/`.
 6. Long / turn-based UI: `try_click` + `repeat`, not a hard `click` on a disabled button.
 7. `git diff --name-only` after the playtest must stay under `agent/`.
 
