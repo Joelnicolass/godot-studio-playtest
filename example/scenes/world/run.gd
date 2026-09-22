@@ -11,6 +11,8 @@ func _ready() -> void:
 		hud.set_hp(ship.health.hp)
 		ship.health.damaged.connect(_on_ship_damaged)
 		ship.crashed.connect(_on_ship_crashed)
+	if ship and ship.ship_gun:
+		ship.ship_gun.obstacle_hit.connect(_on_obstacle_hit)
 
 
 func _on_ship_damaged(_amount: int) -> void:
@@ -20,3 +22,7 @@ func _on_ship_damaged(_amount: int) -> void:
 
 func _on_ship_crashed() -> void:
 	hud.show_crash()
+
+
+func _on_obstacle_hit() -> void:
+	hud.show_hit()

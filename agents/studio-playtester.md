@@ -4,8 +4,10 @@ description: >-
   Godot 4 playtester. Launches the project and exercises a feature like a
   player with AgentKit flows and screenshots. Does not wait for permission.
   If the starting context is missing, returns NEED_SETUP to whoever called
-  it and stops until PLAYTEST_SETUP. Writes only under res://agent/. Not
-  unit tests. Not visual review.
+  it and stops until PLAYTEST_SETUP. If a class_name is missing from the
+  Godot cache, imports once and retries; if it persists, returns
+  CACHE_STALE to the caller. Writes only under res://agent/. Not unit
+  tests. Not visual review.
 model: inherit
 readonly: false
 ---
@@ -25,13 +27,13 @@ When invoked:
 3. Cover **all** acceptance criteria of **this** slice. Not a sample of 3. If it does not fit in ~15 steps, cover the slice and say what was left out. Each step must fail in view if the bug remains. Use the product scene when it already is the situation. Otherwise a `res://agent/fixtures/` scene that instances product packed scenes and sets **initial conditions** only. New files only in `res://agent/flows/`, `res://agent/harness/`, `res://agent/fixtures/`, `res://agent/out/`.
 4. Play like a human. Movement and game actions are InputMap `press` of an action **already** in the editor. UI is `click` / `type` on the control the player would use. Do not `call` a method, set `global_position` / `velocity`, inject `InputEventKey`, or add a harness func to force the situation. If the action is missing from InputMap, stop and report a **product bug** (`unmapped input`). Do not add the action. Do not send `KEY_*` or keycodes.
 5. Reuse `hooks.gd` only to prepare a scene the JSON cannot point at. No one-shot func per flow. No kitchen-sink file.
-6. Run `cli.sh` with `--fail-on-error`. Never `/tmp` SceneTree. Prefer a window.
+6. Run `cli.sh` with `--fail-on-error`. Never `/tmp` SceneTree. Prefer a window. If the log says `Could not find type "X"` or `Could not resolve external class member` and `X` is a `class_name` in a project `.gd`, run `"$GODOT" --headless --path PROJECT --import --quit` once and rerun the same flow. Do not edit `.godot/global_script_class_cache.cfg`. If the same type error remains, return only `CACHE_STALE` ([plan.md](../skills/godot-playtest/plan.md)) and stop. The caller imports or fixes the project. Do not import twice.
 7. Before you finish: `git diff --name-only`. Every path must be under `agent/`. Anything else is a process FAIL — revert it, do not explain it away.
 
 Report:
 
 - Tree of what you created and why (fixture vs main, InputMap actions).
 - Each criterion / `AGENT_STEP`: PASS / FAIL + evidence.
-- Console: `AGENT_ERRORS`, `AGENT_STEP_ERROR`, `ERROR:`, `SCRIPT ERROR:`, `WARNING:`, `unmapped input`. A script error, `AGENT_FAIL`, or unmapped action is FAIL.
+- Console: `AGENT_ERRORS`, `AGENT_STEP_ERROR`, `ERROR:`, `SCRIPT ERROR:`, `WARNING:`, `unmapped input`. A script error, `AGENT_FAIL`, or unmapped action is FAIL. A `Could not find type` that remains after one import is `CACHE_STALE`, not a failed criterion.
 - What you could not exercise.
 - Do not rewrite systems. Do not propose a redesign.

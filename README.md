@@ -8,7 +8,7 @@ El título vive en **otro** proyecto. Este repo instala el plugin, las skills, e
 
 ## Mapa
 
-Mapa interactivo del playtest: https://joelnicolass.github.io/godot-studio-playtest/
+Mapa del trabajo de un slice: https://joelnicolass.github.io/godot-studio-playtest/
 
 Fuente: [`docs/architecture.json`](docs/architecture.json).
 
@@ -21,27 +21,6 @@ Un agente que “prueba” el juego suele:
 3. Meter `agent_setup()`, una escena `test_*.tscn` o spawn en el glue de producto.
 
 Acá el contrato es el contrario: el agente habla con Godot por CLI, el flow es JSON, y los helpers viven en `res://agent/`.
-
-```mermaid
-flowchart TB
-  subgraph before [Sin AgentKit]
-    a1["godot -s /tmp/*.gd"]
-    a2[PNG inventado]
-    a3["test.tscn / agent_* en scenes/"]
-    a1 --> fail[Autoloads rotos / evidencia falsa]
-    a2 --> fail
-    a3 --> fail
-  end
-
-  subgraph after [Con este módulo]
-    b1[addons/agent_kit CLI]
-    b2["res://agent/flows JSON"]
-    b3["res://agent/harness"]
-    b1 --> ok["AGENT_OK / AGENT_FAIL"]
-    b2 --> ok
-    b3 --> ok
-  end
-```
 
 ## Qué es cada pieza
 
@@ -57,24 +36,32 @@ Cursor distingue **skill** (procedimiento que el agente carga), **command** (pro
 | Workspace | `res://agent/` en **tu** juego | `flows/`, `harness/`, `fixtures/`, `out/`. Lo crea el instalador. **Cero** archivos de playtest fuera. |
 | Editor experimental | `experimental/agent-flow-editor/` | Cables → el mismo JSON. No entra en `./install.sh`. |
 
-El grafo de esas piezas está en [Mapa](#mapa).
+El trabajo de ese slice está en [Mapa](#mapa).
 
 ## Flujo de playtest
 
-El playtest arranca con la orden de probar el slice. No pide permiso. Si la escena del producto no trae el contexto y quien llamó no mandó las condiciones, devuelve `NEED_SETUP` y espera `PLAYTEST_SETUP`. Quien llama es otro agente o un humano.
+Quien llama (el tech lead u otro agente, o un humano) entrega el slice y los criterios. El playtester mira el juego, escribe la partida en `res://agent/` y la corre. El informe vuelve con PASS o FAIL.
 
 ```mermaid
-flowchart TD
-  slice[Slice a probar] --> seen{¿La situación ya está en la escena o vino PLAYTEST_SETUP?}
-  seen -->|no| ask[NEED_SETUP al caller]
-  ask --> setup[PLAYTEST_SETUP]
-  seen -->|sí| cut[Escena del producto o fixture]
-  setup --> cut
-  cut --> input{¿La acción está en el InputMap o hay un control?}
-  input -->|no| bug[BUG de producto: input no mapeado]
-  input -->|sí| run["press / click como el jugador"]
-  run --> report[PASS / FAIL + PNG]
+sequenceDiagram
+  participant C as Quien llama
+  participant P as studio-playtester
+  participant A as res://agent
+  participant G as Godot
+  C->>P: Criterios del slice
+  P->>G: inspect --unique e info
+  G-->>P: %nombres e InputMap
+  P->>A: flow JSON y fixture de estado inicial
+  P->>G: cli.sh flow --fail-on-error
+  Note over G: press de la acción mapeada
+  G-->>A: PNG en out/
+  G-->>P: AGENT_OK o AGENT_FAIL
+  P-->>C: Informe PASS / FAIL
 ```
+
+El fixture, cuando hace falta, deja el estado inicial con packed scenes del producto. `press` manda un `InputEventAction` de una acción que ya está en el InputMap: `_unhandled_input` con `is_action_pressed` es el camino del juego. Un keycode que no está en el mapa es un bug del producto.
+
+Si falta el estado inicial, el playtester devuelve `NEED_SETUP` y quien llama responde con `PLAYTEST_SETUP`. Si un `class_name` no está en el cache, importa una vez; si el error vuelve, devuelve `CACHE_STALE`.
 
 Reglas cortas:
 
@@ -84,7 +71,7 @@ Reglas cortas:
 4. Solo acciones ya mapeadas en el editor, o click/type del control. Sin keycodes. Sin `func` que mueva o fuerce el estado.
 5. Cero archivos fuera de `res://agent/`. Cero cambios a InputMap, resources o scripts de juego.
 6. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
-7. Un `SCRIPT ERROR` o `unmapped input` es FAIL.
+7. Un `SCRIPT ERROR` o `unmapped input` es FAIL. `Could not find type` de un `class_name` que ya existe: un `--import` y se reintenta el flow. Si vuelve, `CACHE_STALE` a quien llamó.
 
 ## Instalar Cursor
 
@@ -122,7 +109,7 @@ addons/agent_kit/cli.sh /ABS/GODOT_ROOT flow --flow=boot_smoke.json --fail-on-er
 
 ```bash
 example/addons/agent_kit/cli.sh example flow --flow=boot_smoke.json --fail-on-error
-example/addons/agent_kit/cli.sh example flow --flow=call_private_harness.json --fail-on-error
+example/addons/agent_kit/cli.sh example flow --flow=crash_side.json --fail-on-error
 ```
 
 ## Editor de flow (opcional)

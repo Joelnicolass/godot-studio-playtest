@@ -58,16 +58,9 @@ Líneas para grep: `AGENT_OK`, `AGENT_FAIL`, `AGENT_SHOT=`, `AGENT_PRINT`, `AGEN
 }
 ```
 
-`click` emite `pressed` en el `BaseButton`. `%Nombre` se busca en la escena y en hijos. `press` solo acepta una acción que **ya** está en el InputMap; si no existe, falla con `unmapped input` (bug de producto, no un keycode). `--fail-on-error` falla si el engine logueó ERROR / SCRIPT ERROR. `--flow=boot_smoke.json` busca en `res://agent/flows/`. `--out=` default: `res://agent/out`.
+`click` pone el puntero en el centro del control y falla si no dispara `pressed`. `%Nombre` se busca en la escena y en hijos. `press` solo acepta una acción que **ya** está en el InputMap; si no existe, falla con `unmapped input`. `call` sobre un nodo del producto, `seed` y `time_scale` fallan. `--fail-on-error` falla si el engine logueó ERROR / SCRIPT ERROR. `--flow=boot_smoke.json` busca en `res://agent/flows/`. `--out=` default: `res://agent/out`.
 
-El playtest de una feature no usa `call` para jugar: el jugador pulsa el botón o una acción mapeada. El harness no mueve actores. `call("_on_play")` en el example solo demuestra que `_` no es privado de runtime.
-
-```json
-{ "call": { "harness": "hooks", "method": "play_via_private" } }
-{ "call": { "node": ".", "method": "_on_play" } }
-```
-
-AgentKit monta el harness **solo** con `--agent=`. F5 de un jugador no lo carga.
+El harness no mueve actores. AgentKit lo monta **solo** con `--agent=`. F5 de un jugador no lo carga.
 
 UI que aparece y desaparece:
 

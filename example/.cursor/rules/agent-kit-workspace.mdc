@@ -13,4 +13,6 @@ La acción del jugador es `press` de una acción que **ya** está en el InputMap
 
 El harness no mueve, no dispara y no fuerza el estado (`velocity`, `global_position`, `InputEventKey`, `call` para saltear el botón). Si el JSON puede `scene` + `press`, no agregues un `func`.
 
+`Could not find type` de un `class_name` que ya está en un `.gd`: importá el proyecto una vez (`--import --quit`) y reintentá. No edites `.godot/global_script_class_cache.cfg`. Si el mismo error vuelve, devolvé `CACHE_STALE` a quien te invocó.
+
 Detalle: skill `godot-playtest` → `evaluate.md`.

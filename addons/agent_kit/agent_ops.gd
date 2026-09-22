@@ -108,31 +108,53 @@ static func screenshot(tree: SceneTree, path: String, focus: Node = null) -> Str
 	return ""
 
 
-static func click(scene: Node, spec: String) -> String:
+static func click(scene: Node, spec: String, allow_skip: bool = false) -> String:
 	var node := resolve(scene, spec)
-	if node == null:
-		return "missing node %s" % spec
-	if node is BaseButton:
-		(node as BaseButton).pressed.emit()
-		print("AGENT_CLICK ", spec)
-		return ""
-	return "%s is %s, not a BaseButton" % [spec, node.get_class()]
-
-
-static func try_click(scene: Node, spec: String) -> String:
-	var node := resolve(scene, spec)
-	if node == null:
-		print("AGENT_SKIP try_click missing ", spec)
-		return ""
-	if not (node is BaseButton):
+	if node != null and not (node is BaseButton):
 		return "%s is %s, not a BaseButton" % [spec, node.get_class()]
-	var btn := node as BaseButton
-	if btn.disabled or not btn.is_visible_in_tree():
-		print("AGENT_SKIP try_click ", spec)
-		return ""
-	btn.pressed.emit()
+	var button := node as BaseButton
+	if button == null or button.disabled or not button.is_visible_in_tree():
+		if allow_skip:
+			print("AGENT_SKIP try_click ", spec)
+			return ""
+		return "click not ready %s" % spec
+	return await _pointer_click(button, spec)
+
+
+static func _pointer_click(button: BaseButton, spec: String) -> String:
+	var rect := button.get_global_rect()
+	if rect.size == Vector2.ZERO:
+		return "click missed %s (control has no size)" % spec
+	var tree := button.get_tree()
+	if tree == null:
+		return "click missed %s (control is not in the tree)" % spec
+	var center := rect.get_center()
+	var state := {"ok": false}
+	var on_pressed := func() -> void:
+		state["ok"] = true
+	button.pressed.connect(on_pressed, CONNECT_ONE_SHOT)
+	_push_mouse(button, center, true)
+	await tree.process_frame
+	if is_instance_valid(button):
+		_push_mouse(button, center, false)
+	await tree.process_frame
+	if is_instance_valid(button) and button.pressed.is_connected(on_pressed):
+		button.pressed.disconnect(on_pressed)
+	if not bool(state["ok"]):
+		return "click missed %s (pointer did not hit the control)" % spec
 	print("AGENT_CLICK ", spec)
 	return ""
+
+
+static func _push_mouse(node: Node, pos: Vector2, pressed: bool) -> void:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = pressed
+	ev.position = pos
+	ev.global_position = pos
+	var viewport := node.get_viewport()
+	if viewport != null:
+		viewport.push_input(ev)
 
 
 static func type_in(scene: Node, spec: String, text: String) -> String:
@@ -182,21 +204,46 @@ static func input_action_names() -> Array:
 	return names
 
 
-static func press_action(action: String, pressed: bool = true) -> String:
+static func press_action(action: String, pressed: bool = true, announce: bool = true) -> String:
 	var name := action.strip_edges()
+	var err := _check_action(name)
+	if not err.is_empty():
+		return err
+	_emit_action_event(name, pressed)
+	if pressed:
+		Input.action_press(name)
+	else:
+		Input.action_release(name)
+	if announce:
+		print("AGENT_PRESS ", name, " pressed=", pressed)
+	return ""
+
+
+static func sustain_action(action: String) -> String:
+	var name := action.strip_edges()
+	var err := _check_action(name)
+	if not err.is_empty():
+		return err
+	Input.action_press(name)
+	return ""
+
+
+static func _check_action(name: String) -> String:
 	if name.is_empty():
 		return "unmapped input: empty action (product bug; do not send keycodes)"
 	if _looks_like_keycode(name):
 		return "unmapped input: %s is a keycode, not an InputMap action (product bug)" % name
 	if not InputMap.has_action(name):
 		return "unmapped input: InputMap has no action '%s' (product bug; do not invent keys)" % name
+	return ""
+
+
+static func _emit_action_event(name: String, pressed: bool) -> void:
 	var ev := InputEventAction.new()
-	ev.action = name
+	ev.action = StringName(name)
 	ev.pressed = pressed
 	ev.strength = 1.0 if pressed else 0.0
 	Input.parse_input_event(ev)
-	print("AGENT_PRESS ", name, " pressed=", pressed)
-	return ""
 
 
 static func _looks_like_keycode(name: String) -> bool:
@@ -386,17 +433,13 @@ static func _mouse_motion(from: Vector2, to: Vector2) -> void:
 static func call_method(scene: Node, spec: Dictionary) -> String:
 	var label := ""
 	var node: Node = null
-	if spec.has("harness"):
-		label = str(spec.get("harness", "")).strip_edges()
-		var tree: SceneTree = scene.get_tree() if scene else null
-		node = Workspace.harness_node(tree, label)
-		if node == null:
-			return "missing harness %s" % label
-	else:
-		label = str(spec.get("node", ""))
-		node = resolve(scene, label)
-		if node == null:
-			return "missing node %s" % label
+	if not spec.has("harness"):
+		return "call on a product node is not a player action; use click or press"
+	label = str(spec.get("harness", "")).strip_edges()
+	var tree: SceneTree = scene.get_tree() if scene else null
+	node = Workspace.harness_node(tree, label)
+	if node == null:
+		return "missing harness %s" % label
 	var method := str(spec.get("method", "")).strip_edges()
 	if method.is_empty():
 		return "call missing method"

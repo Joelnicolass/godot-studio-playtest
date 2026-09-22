@@ -35,7 +35,12 @@ func _ready() -> void:
 
 func _run(cmd: Dictionary) -> void:
 	Workspace.ensure_dirs()
-	Workspace.mount(self)
+	var harness_err := Workspace.mount(self)
+	if not harness_err.is_empty():
+		print("AGENT_FAIL harness ", harness_err)
+		_exit_code = 1
+		_finish()
+		return
 	var verb := str(cmd.get("verb", "")).strip_edges().to_lower()
 	match verb:
 		"help", "h":

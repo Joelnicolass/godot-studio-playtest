@@ -16,6 +16,8 @@ Load skill `godot-agent-kit`. If `addons/agent_kit/` is missing next to `project
 
 **Play:** use the product scene when the slice already starts there. If the context is missing, return only `NEED_SETUP` to whoever called you (agent or human) and wait for `PLAYTEST_SETUP` — initial conditions, not permission. Then build `agent/fixtures/` from that. Actions are InputMap `press` that already exist, or `click` / `type` on the player’s control. Missing action = product bug (`unmapped input`). No keycodes. No harness func that moves or forces state. Skill `godot-playtest` → `plan.md`.
 
+**Class cache:** `Could not find type "X"` when `X` is a `class_name` in a `.gd` is a stale `.godot/global_script_class_cache.cfg`. Run `godot --headless --path PROJECT --import --quit` once and rerun the flow. Do not edit the cache file. If the same error remains, return `CACHE_STALE` to the caller and stop.
+
 Do not use `godot -s /tmp/*.gd`. Use:
 
 ```bash

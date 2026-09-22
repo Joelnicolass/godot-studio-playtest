@@ -46,41 +46,35 @@ func _run_body(tree: SceneTree, spec: Dictionary, out_dir: String) -> String:
 	return ""
 
 
-func _step(tree: SceneTree, step: Dictionary, dest: String, index: int) -> String:
+func _step(tree: SceneTree, step: Dictionary, dest: String, index: int, allow_skip: bool = false) -> String:
 	var mark := 0
 	if LogSink.active != null:
 		mark = LogSink.active.mark()
 	print("AGENT_STEP ", index, " ", _step_label(step))
-	var fail := await _dispatch(tree, step, dest, index)
+	var fail := await _dispatch(tree, step, dest, index, allow_skip)
 	_trace_errors(index, mark)
 	if fail.is_empty() and _fail_on_error and _failures_since(mark):
 		return "engine error during step %d" % index
 	return fail
 
 
-func _dispatch(tree: SceneTree, step: Dictionary, dest: String, index: int) -> String:
+func _dispatch(tree: SceneTree, step: Dictionary, dest: String, index: int, allow_skip: bool = false) -> String:
 	var scene := Ops.current_scene(tree)
 	if step.has("wait"):
 		await tree.create_timer(float(step["wait"])).timeout
 		return ""
 	if step.has("scene"):
 		return await _change_scene(tree, str(step["scene"]))
-	if step.has("seed"):
-		seed(int(step["seed"]))
-		print("AGENT_SEED ", int(step["seed"]))
-		return ""
-	if step.has("time_scale"):
-		Engine.time_scale = float(step["time_scale"])
-		print("AGENT_TIME_SCALE ", Engine.time_scale)
-		return ""
+	if step.has("seed") or step.has("time_scale"):
+		return "seed and time_scale are not player actions"
 	if step.has("shot") or step.has("screenshot"):
 		return await _shot(tree, scene, step, dest, index)
 	if step.has("click"):
-		return Ops.click(scene, str(step["click"]))
+		return await Ops.click(scene, str(step["click"]), false)
 	if step.has("press"):
 		return await _press(tree, step["press"])
 	if step.has("try_click"):
-		return Ops.try_click(scene, str(step["try_click"]))
+		return await Ops.click(scene, str(step["try_click"]), allow_skip)
 	if step.has("repeat"):
 		return await _repeat(tree, step["repeat"], dest, index)
 	if step.has("type"):
@@ -215,7 +209,12 @@ func _press(tree: SceneTree, spec: Variant) -> String:
 		var down := Ops.press_action(name, true)
 		if not down.is_empty():
 			return down
-		await tree.create_timer(hold).timeout
+		var left := hold
+		while left > 0.0:
+			await tree.physics_frame
+			left -= tree.root.get_physics_process_delta_time()
+			if left > 0.0:
+				Ops.sustain_action(name)
 		return Ops.press_action(name, false)
 	return Ops.press_action(name, bool(spec.get("pressed", true)))
 
@@ -252,19 +251,37 @@ func _resolve_shot_path(dest: String, name: String) -> String:
 	return dest.path_join(trimmed)
 
 
+func _contains_try_click(steps: Variant) -> bool:
+	if typeof(steps) != TYPE_ARRAY:
+		return false
+	for raw in steps:
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		if (raw as Dictionary).has("try_click"):
+			return true
+		if (raw as Dictionary).has("repeat"):
+			var nested: Variant = (raw as Dictionary)["repeat"]
+			if typeof(nested) == TYPE_DICTIONARY and _contains_try_click(nested.get("steps", [])):
+				return true
+	return false
+
+
 func _repeat(tree: SceneTree, spec: Variant, dest: String, index: int) -> String:
 	if typeof(spec) != TYPE_DICTIONARY:
 		return "repeat %d must be an object" % index
 	var times := maxi(1, int(spec.get("times", 1)))
 	var until: Variant = spec.get("until", {})
+	var has_until := typeof(until) == TYPE_DICTIONARY and not (until as Dictionary).is_empty()
 	var inner: Variant = spec.get("steps", [])
 	if typeof(inner) != TYPE_ARRAY:
 		return "repeat.steps must be an array"
+	if _contains_try_click(inner) and not has_until:
+		return "try_click inside repeat requires until"
 	var last := ""
 	var scene: Node = null
 	for i in times:
 		scene = Ops.current_scene(tree)
-		if typeof(until) == TYPE_DICTIONARY and not (until as Dictionary).is_empty():
+		if has_until:
 			last = _assert(scene, until, index)
 			if last.is_empty():
 				print("AGENT_REPEAT done iter=%d" % i)
@@ -272,7 +289,7 @@ func _repeat(tree: SceneTree, spec: Variant, dest: String, index: int) -> String
 		for raw in inner:
 			if typeof(raw) != TYPE_DICTIONARY:
 				return "repeat step is not an object"
-			var fail := await _step(tree, raw, dest, index)
+			var fail := await _step(tree, raw, dest, index, has_until)
 			if not fail.is_empty():
 				return fail
 	scene = Ops.current_scene(tree)
@@ -285,11 +302,27 @@ func _repeat(tree: SceneTree, spec: Variant, dest: String, index: int) -> String
 	return ""
 
 
+func _assert_expects_absent(spec: Dictionary) -> bool:
+	var saw_absence := false
+	for key in spec.keys():
+		var name := str(key)
+		if name == "node":
+			continue
+		if (name == "visible_in_tree" or name == "visible") and not bool(spec[key]):
+			saw_absence = true
+			continue
+		return false
+	return saw_absence
+
+
 func _assert(scene: Node, spec: Variant, index: int) -> String:
 	if typeof(spec) != TYPE_DICTIONARY:
 		return "assert %d must be an object" % index
 	var node := Ops.resolve(scene, str(spec.get("node", "")))
 	if node == null:
+		if _assert_expects_absent(spec):
+			print("AGENT_ASSERT ok step=%d node=%s" % [index, spec.get("node", "")])
+			return ""
 		return "assert missing %s" % str(spec.get("node", ""))
 	if spec.has("disabled"):
 		if not (node is BaseButton):

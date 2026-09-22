@@ -2,7 +2,7 @@
 
 ## F1 — Chocar contra obstáculos (cubos)
 
-Rail shooter 3D mínimo (estilo Star Fox). Placeholders: cubos. Sin disparo, enemigos, anillos ni modelos.
+Rail shooter 3D mínimo (estilo Star Fox). Placeholders: cubos. Sin enemigos, anillos ni modelos.
 
 ### El jugador
 
@@ -21,3 +21,19 @@ Entra desde **Jugar**. La nave avanza sola por el corredor. Puede desviarse. Si 
 ### Fuera de alcance
 
 Disparo, enemigos, anillos, bosses, juice, Blender/Aseprite, multiplayer, GUT.
+
+## F2 — Disparo
+
+Un disparo destruye un cubo y el HUD muestra impacto.
+
+### Criterios
+
+1. InputMap tiene la acción `fire` (Space / J).
+2. Un press spawnea un proyectil desde la nave, viaja en -Z más rápido que el rail (`ShipGun.speed` > rail).
+3. Si el proyectil solapa un `Obstacle`, el obstáculo sale del árbol y `%HitLabel` queda visible con texto que contiene "Impacto".
+4. Sin disparar: `%ObstacleOnRail` sigue chocando la nave (F1).
+5. `speed` y `cooldown` son `@export` en `ShipGun`.
+
+### Fuera de alcance
+
+Autofire al mantener, enemigos, juice, Blender/Aseprite, multiplayer, GUT.

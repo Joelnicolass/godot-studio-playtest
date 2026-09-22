@@ -5,8 +5,9 @@ description: >-
   player (run scene, click, screenshot, AgentKit flow). Use when a slice
   needs a playtest or studio-playtester is invoked. Does not wait for
   permission. Returns NEED_SETUP to the caller when the starting context
-  is missing. Never creates playtest files outside res://agent/. Never
-  edits business rules.
+  is missing. On a stale class_name cache, imports once and retries; if
+  it persists, returns CACHE_STALE to the caller. Never creates playtest
+  files outside res://agent/. Never edits business rules.
 ---
 
 # Playtest
@@ -50,13 +51,21 @@ Grep `AGENT_OK`, `AGENT_FAIL`, `AGENT_STEP`, `AGENT_STEP_ERROR`, `AGENT_ERRORS`,
 
 `--fail-on-error` fails the run if the engine logged ERROR / SCRIPT ERROR even when clicks “worked”. Include that log in the report.
 
+A `SCRIPT ERROR` of `Could not find type "X"` or `Could not resolve external class member`, when `X` is a `class_name` already in a project `.gd`, is a stale `.godot/global_script_class_cache.cfg`. Do not edit that file. Do not call it a product bug yet. Once:
+
+```bash
+"$GODOT" --headless --path /ABS/GODOT_ROOT --import --quit
+```
+
+Rerun the same flow. If the type error is gone, continue the slice and say you imported. If the same type error remains, return only `CACHE_STALE` ([plan.md](plan.md)) to whoever invoked you and stop. They import or fix the project. Do not import a second time.
+
 If the addon is missing, temporary fallback: [capture.md](capture.md). Headless does not give pixels.
 
 ## 4. Report
 
 - Command, scene, JSON if you ran a flow. Name the fixture vs main, InputMap actions, and whether hooks were reused.
 - Each criterion / step: PASS / FAIL + evidence (PNG, `AGENT_PRINT`, console).
-- Console: `AGENT_ERRORS` and `ERROR:` / `SCRIPT ERROR:` / `WARNING:`. A script error is FAIL.
+- Console: `AGENT_ERRORS` and `ERROR:` / `SCRIPT ERROR:` / `WARNING:`. A script error is FAIL after the cache retry. A type error that survived one `--import` is `CACHE_STALE` for the caller, not a failed shot.
 - What you could not exercise (no display, missing save, …).
 - Process FAIL if any new/edited path is outside `agent/`. Paste `git diff --name-only`.
 - Do not rewrite systems. Do not judge look.

@@ -38,6 +38,18 @@ Prohibido en el harness y en el JSON: `global_position`, `velocity`, `translate`
 
 `hooks.gd` no es una cocina de helpers. Si el JSON puede `scene` + `press` + `click`, no agregues un método. Un método nuevo solo prepara (por ejemplo esperar a que el árbol exista) y se reutiliza. No uno por flow.
 
-## 3. Informe
+## 3. Cache de class_name
 
-Fixture vs main, acciones de InputMap usadas, y si el diff salió de `agent/`. Un `unmapped input` es FAIL del producto, no del flow.
+Un `SCRIPT ERROR` con `Could not find type "X"` o `Could not resolve external class member` es cache viejo si `X` es un `class_name` que ya está en un `.gd` del proyecto y no está en `.godot/global_script_class_cache.cfg`. No es un bug de la feature. No edites ese archivo a mano. No lo trates como FAIL del criterio hasta haber reimportado.
+
+Reparación, una sola vez, con el mismo binario del flow:
+
+```bash
+"$GODOT" --headless --path /ABS/GODOT_ROOT --import --quit
+```
+
+Después corré el mismo flow. Si el error desaparece, seguí el slice. Si vuelve el mismo `Could not find type`, no reimportes de nuevo: devolvé `CACHE_STALE` a quien te invocó y parate. Quien llama importa o arregla el proyecto. Plantilla: [plan.md](plan.md).
+
+## 4. Informe
+
+Fixture vs main, acciones de InputMap usadas, y si el diff salió de `agent/`. Un `unmapped input` es FAIL del producto, no del flow. Un `Could not find type` que se fue con `--import` no es FAIL del criterio: decí que reimportaste y seguiste.

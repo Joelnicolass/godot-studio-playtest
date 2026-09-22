@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://cshipactor0001"]
+[gd_scene load_steps=11 format=3 uid="uid://cshipactor0001"]
 
 [ext_resource type="Script" path="res://scenes/actors/ship.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://chealthcomp001" path="res://scenes/components/health.tscn" id="2"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://crailmotor0001" path="res://scenes/components/rail_motor.tscn" id="4"]
 [ext_resource type="PackedScene" uid="uid://cshipsteer0001" path="res://scenes/components/ship_steer.tscn" id="5"]
 [ext_resource type="Resource" path="res://resources/match/match_rules.tres" id="6"]
+[ext_resource type="PackedScene" uid="uid://cshipgun000001" path="res://scenes/components/ship_gun.tscn" id="7"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_hull"]
 size = Vector3(1.2, 0.6, 1.8)
@@ -26,6 +27,7 @@ health = NodePath("Health")
 hurtbox = NodePath("Hurtbox3D")
 rail_motor = NodePath("RailMotor")
 ship_steer = NodePath("ShipSteer")
+ship_gun = NodePath("ShipGun")
 rules = ExtResource("6")
 
 [node name="Hull" type="MeshInstance3D" parent="."]
@@ -48,6 +50,8 @@ rules = ExtResource("6")
 [node name="ShipSteer" parent="." instance=ExtResource("5")]
 actor = NodePath("..")
 rules = ExtResource("6")
+
+[node name="ShipGun" parent="." instance=ExtResource("7")]
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 12)

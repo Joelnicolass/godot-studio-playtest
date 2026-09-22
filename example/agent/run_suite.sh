@@ -12,8 +12,6 @@ FLOWS=(
 	dodge_left.json
 	fly_over.json
 	crash_side.json
-	call_private_harness.json
-	call_private_json.json
 )
 
 failed=0

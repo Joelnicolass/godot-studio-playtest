@@ -41,3 +41,15 @@ agent/
 ```
 
 Si una acción no está mapeada en el editor, no armes el flow con un keycode: reportá el bug y parate.
+
+Si reimportar no registra el `class_name`, devolvé solo esto y no sigas el slice:
+
+```
+CACHE_STALE
+tipo: ShipGun
+script: res://scenes/components/ship_gun.gd
+error: Could not find type "ShipGun"
+importe: una vez, el error volvió
+```
+
+Quien llama corre el import o corrige el proyecto, y relanza el playtest.

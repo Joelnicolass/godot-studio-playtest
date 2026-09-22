@@ -67,5 +67,6 @@ Grep: `AGENT_OK`, `AGENT_FAIL`, `AGENT_SHOT=`, `AGENT_PRINT`, `AGENT_CLICK`, `AG
 5. Do not add spawn / force-state / count / pause helpers outside `agent/`.
 6. Long / turn-based UI: `try_click` + `repeat`, not a hard `click` on a disabled button.
 7. `git diff --name-only` after the playtest must stay under `agent/`.
+8. `Could not find type` for a `class_name` that exists in a `.gd`: `--import` once, rerun. If it persists, return `CACHE_STALE` to the caller. Do not hand-edit the class cache.
 
 Optional visual editor (not in `./install.sh`): `experimental/agent-flow-editor/` (`pnpm install` && `pnpm dev`).
