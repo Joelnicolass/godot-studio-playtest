@@ -16,7 +16,7 @@ AgentKit work **never** leaves that directory. New scripts, packed scenes, Resou
 | `res://agent/out/` | yes (CLI PNG; gitignored) |
 | `src/`, `scenes/`, `tests/`, product glue | **no** |
 
-Forbidden even with a “test_” name: `scenes/test_crash.tscn`, `scenes/world/agent_arena.tscn`, `tests/playtest_*.gd`, dummy actors next to the ship. Use the product scene when the criterion already starts there. When it does not, build the throwaway world in `res://agent/fixtures/` from `PLAYTEST_SETUP` (product packed scenes, initial state only). If that setup was not provided, return `NEED_SETUP` and write nothing. How to choose: [evaluate.md](../godot-playtest/evaluate.md).
+Forbidden even with a “test_” name: `scenes/test_*.tscn`, `tests/playtest_*.gd`, dummy actors next to the product. Play `res://debug/…` when the slice names it. Do not build that scene and do not `call()` it into place. If it is missing, return `NEED_SETUP` and write nothing. How to choose: [evaluate.md](../godot-playtest/evaluate.md).
 
 Stop before editing anything outside `res://agent/`. If the change only serves the flow, it belongs in the harness. Product bugs you found while playing are a **report**, not a playtest patch in `scenes/`.
 

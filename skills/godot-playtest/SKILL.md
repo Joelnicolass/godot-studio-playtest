@@ -64,7 +64,7 @@ If the addon is missing, temporary fallback: [capture.md](capture.md). Headless 
 ## 4. Report
 
 - Command, scene, JSON if you ran a flow. Name the fixture vs main, InputMap actions, and whether hooks were reused.
-- Each criterion / step: PASS / FAIL + evidence (PNG, `AGENT_PRINT`, console).
+- Each criterion / step: PASS / FAIL. If the criterion names something visible, open the PNG and say what it shows. A side effect (a number changed, a label flipped) does not pass when the shot shows a different thing (a stack of boxes instead of what was asked, actors piled instead of the layout). Do not file that as a look nit.
 - Console: `AGENT_ERRORS` and `ERROR:` / `SCRIPT ERROR:` / `WARNING:`. A script error is FAIL after the cache retry. A type error that survived one `--import` is `CACHE_STALE` for the caller, not a failed shot.
 - What you could not exercise (no display, missing save, …).
 - Process FAIL if any new/edited path is outside `agent/`. Paste `git diff --name-only`.

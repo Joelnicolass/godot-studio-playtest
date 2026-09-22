@@ -6,18 +6,18 @@ Si falta el contexto para armar el escenario, devolvé **solo** esto a quien te 
 
 ```
 NEED_SETUP
-criterio: matar al boss
+criterio: llegar al objetivo del slice
 falta: no hay res://debug/ nombrada en el F<n> o el RFC
-no voy a: crear el .tscn ni usar call() para spawnear al boss
+no voy a: crear el .tscn ni usar call() para armar el mundo
 ```
 
 Quien llama (otro agente o un humano) responde así:
 
 ```
 PLAYTEST_SETUP
-escena: res://debug/boss_dying.tscn
-accion: fire
-observable: %Boss sale del árbol y %HitLabel muestra Impacto
+escena: res://debug/goal_ready.tscn
+accion: interact
+observable: %Goal sale del árbol y %Status muestra el texto del criterio
 ```
 
 El árbol va en el informe, después de poder jugar. No frena el trabajo si las condiciones ya están.
@@ -25,14 +25,13 @@ El árbol va en el informe, después de poder jugar. No frena el trabajo si las 
 ```
 PLAYTEST_PLAN
 objetivo: …
-escena: agent/fixtures/rail_dodge.tscn (no main: el criterio es esquivar)
-input: press move_left (ya está en el InputMap; si no, BUG)
+escena: res://debug/goal_ready.tscn (la del F<n>; no la inventa el playtester)
+input: press interact (ya está en el InputMap; si no, BUG)
 hooks: ninguno — el JSON alcanza
 límites: solo agent/; cero reglas de negocio
 
 agent/
-├── flows/dodge_left.json
-├── fixtures/rail_dodge.tscn
+├── flows/goal_ready.json
 └── out/
 ```
 
@@ -42,9 +41,9 @@ Si reimportar no registra el `class_name`, devolvé solo esto y no sigas el slic
 
 ```
 CACHE_STALE
-tipo: ShipGun
-script: res://scenes/components/ship_gun.gd
-error: Could not find type "ShipGun"
+tipo: Door
+script: res://scenes/door.gd
+error: Could not find type "Door"
 importe: una vez, el error volvió
 ```
 

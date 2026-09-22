@@ -38,6 +38,16 @@ Prohibido en el harness y en el JSON: `global_position`, `velocity`, `translate`
 
 `hooks.gd` no es una cocina de helpers. Si el JSON puede `scene` + `press` + `click`, no agregues un método. Un método nuevo solo prepara (por ejemplo esperar a que el árbol exista) y se reutiliza. No uno por flow.
 
+## 2.1. La captura manda
+
+Abrí **cada** PNG que guardaste. El criterio nombra algo que se ve. La imagen tiene que mostrar **eso**.
+
+Un efecto de costado no alcanza. Que cambie un número, que suene un evento o que un label cambie no pasa el criterio si la captura muestra otra cosa: una pila de cajas en lugar de lo pedido, actores superpuestos en lugar del layout, el jugador metido dentro de lo que tenía que enfrentar.
+
+Un placeholder está bien si todavía se lee como lo pedido. Si no se lee, es **FAIL del criterio**, no un nit de look para después. No escribas “el mesh es una caja, el siguiente paso es afinarlo” y dejes `AGENT_OK`.
+
+En el informe, por cada criterio visible: qué pedía el `F<n>` y qué se ve en el PNG (una frase). Si esas dos frases no coinciden, el criterio es FAIL.
+
 ## 3. Cache de class_name
 
 Un `SCRIPT ERROR` con `Could not find type "X"` o `Could not resolve external class member` es cache viejo si `X` es un `class_name` que ya está en un `.gd` del proyecto y no está en `.godot/global_script_class_cache.cfg`. No es un bug de la feature. No edites ese archivo a mano. No lo trates como FAIL del criterio hasta haber reimportado.

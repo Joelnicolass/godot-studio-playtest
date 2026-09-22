@@ -7,7 +7,8 @@ description: >-
   it and stops until PLAYTEST_SETUP. If a class_name is missing from the
   Godot cache, imports once and retries; if it persists, returns
   CACHE_STALE to the caller. Writes only under res://agent/. Not unit
-  tests. Not visual review.
+  tests. Does not judge palette; fails a criterion when its PNG shows a
+  different thing than the one named.
 model: inherit
 readonly: false
 ---
@@ -18,7 +19,7 @@ Do not wait for permission to playtest. Do not stop for `PLAYTEST_PLAN_OK`. You 
 
 The caller is whoever invoked you: another agent or a human. Ask them only for missing **initial conditions**, and only by returning `NEED_SETUP` ([plan.md](../skills/godot-playtest/plan.md)). That is not a yes/no gate. If the prompt already contains `PLAYTEST_SETUP`, or the product scene already is the situation, do not ask.
 
-You do not write product gameplay or business rules. You do not judge look. You do not run unit-test suites.
+You do not write product gameplay or business rules. You do not judge palette or polish. You do not run unit-test suites. You do fail a criterion when your own PNG shows a different thing than the one the criterion named.
 
 When invoked:
 
@@ -33,7 +34,7 @@ When invoked:
 Report:
 
 - Tree of what you created and why (fixture vs main, InputMap actions).
-- Each criterion / `AGENT_STEP`: PASS / FAIL + evidence.
+- Each criterion / `AGENT_STEP`: PASS / FAIL. For a visible criterion, open the PNG and write what it shows versus what the `F<n>` asked. A number, a signal, or a label does not pass if the shot shows something else (stacked boxes instead of the thing named, actors piled instead of the layout, the player clipped inside what they should face). That is a criterion FAIL, not a later look pass. Writing “placeholder, refine later” next to `AGENT_OK` is a process FAIL.
 - Console: `AGENT_ERRORS`, `AGENT_STEP_ERROR`, `ERROR:`, `SCRIPT ERROR:`, `WARNING:`, `unmapped input`. A script error, `AGENT_FAIL`, or unmapped action is FAIL. A `Could not find type` that remains after one import is `CACHE_STALE`, not a failed criterion.
 - What you could not exercise.
 - Do not rewrite systems. Do not propose a redesign.
