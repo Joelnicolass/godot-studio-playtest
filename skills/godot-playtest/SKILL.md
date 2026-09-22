@@ -28,7 +28,7 @@ Player actions are InputMap `press` or a real UI control (`click` / `type`). A m
 
 **All** acceptance criteria of **this** slice (the user request; FEATURES/RFC only if the game already has them). Not a sample of 3–7. If it does not fit in ~15 steps, the slice was too big: cover it and list what was left out. Each step must **fail in view** if the bug remains.
 
-If `addons/agent_kit/` exists: `inspect --unique` and `info` (InputMap) first. Use the product scene when the criterion already starts there. Otherwise `"scene"` is `res://agent/fixtures/…` built from `PLAYTEST_SETUP` (product packed scenes, initial state only). Drive the action with an InputMap `press` that already exists, or `click` / `type` on the control the player would use. Do not `call` a method to skip that. Do not teleport or set `velocity`. If `press` returns `unmapped input`, report a product bug and stop. Nothing you create leaves `res://agent/`.
+If `addons/agent_kit/` exists: `inspect --unique` and `info` (InputMap) first. Play the shipping scene when the criterion already starts there. Otherwise play the `res://debug/…` scene named in the prompt, FEATURES, or RFC. If that scene is missing, return only `NEED_SETUP` and stop — do not author it and do not `call()` it into existence. Drive the action with an InputMap `press` (an `InputEventAction`, so `_unhandled_input` counts) or `click` / `type` on the player’s control. Do not teleport or set `velocity`. A raw keycode, or a script that ignores the mapped action, is a product bug. Nothing you create leaves `res://agent/`.
 
 ## 2. Launch
 

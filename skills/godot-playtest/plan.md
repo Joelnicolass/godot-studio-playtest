@@ -6,22 +6,18 @@ Si falta el contexto para armar el escenario, devolvé **solo** esto a quien te 
 
 ```
 NEED_SETUP
-criterio: esquivar el cubo del centro
-falta:
-- packed scenes: …
-- estado inicial: posición, .tres que ya existe, qué nodos están
-- acción o control: …
-- observable al final: …
+criterio: matar al boss
+falta: no hay res://debug/ nombrada en el F<n> o el RFC
+no voy a: crear el .tscn ni usar call() para spawnear al boss
 ```
 
 Quien llama (otro agente o un humano) responde así:
 
 ```
 PLAYTEST_SETUP
-escenas: res://scenes/actors/ship.tscn, res://scenes/actors/obstacle.tscn
-estado: nave en el origen, cubo en (0, 0, -28), match_rules.tres del producto
-accion: move_left
-observable: %HpLabel sigue en HP 1 y %CrashBanner oculto
+escena: res://debug/boss_dying.tscn
+accion: fire
+observable: %Boss sale del árbol y %HitLabel muestra Impacto
 ```
 
 El árbol va en el informe, después de poder jugar. No frena el trabajo si las condiciones ya están.

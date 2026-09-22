@@ -8,23 +8,23 @@ Podés crear o editar solo dentro de `res://agent/`:
 
 | Path | Para qué |
 |------|----------|
-| `flows/*.json` | El flujo |
-| `fixtures/` | Escena de corte que **instancea** packed scenes del producto |
-| `harness/*.gd` | Preparar la escena si el JSON no alcanza. Sin `class_name` |
+| `flows/*.json` | El flujo que juega `res://debug/` o la escena del producto |
+| `harness/*.gd` | Solo si el JSON no puede preparar nada. Sin `class_name`. Sin `call()` para armar el mundo |
 | `out/` | PNG del CLI |
 
 No toques reglas de negocio: `scenes/`, `src/`, `resources/`, `RULES.md`, `project.godot`, InputMap, scripts de actores. No agregues una acción al editor para que el flow pase. Al cierre: `git diff --name-only` solo bajo `agent/`.
 
-## 1. Escena del producto o fixture
+## 1. Jugá la escena que ya aprobaron
 
 `inspect --unique` e `info` primero.
 
-- Si la situación del criterio **ya empieza** en la escena del producto, o quien te invocó ya mandó `PLAYTEST_SETUP`, jugá ahí o armá el fixture con **esas** condiciones. No preguntes de nuevo.
-- Si el criterio pide un contexto que esa escena no tiene y el pedido no trae las precondiciones, **no inventes el mundo**. Devolvé solo `NEED_SETUP` a quien te llamó (orquestador u humano) y parate. Sin archivos. Plantilla: [plan.md](plan.md).
+La escena de prueba es `res://debug/…`, nombrada en el `F<n>` o el RFC y construida por el developer. Tu JSON apunta ahí con `"scene"`. No la crees, no la edites y no uses `call()` para armarla. `res://agent/` es el flow, el harness mínimo y los PNG.
 
-El fixture, cuando hace falta, instancea packed scenes del producto y deja el **estado inicial**. La interacción la hace el input. Poner el cubo delante de la nave y pulsar `move_left` prueba el esquive. Poner la nave ya adentro del cubo no prueba el choque: coloca el resultado.
+- Si el criterio ya empieza en la escena que el jugador abre, jugá esa.
+- Si el plan nombra `res://debug/…` y existe, jugá esa.
+- Si el criterio no cabe en la escena del jugador y **no** hay `res://debug/` en el pedido: devolvé solo `NEED_SETUP` y parate. Sin archivos. Quien llama (tech lead / orquestador) completa la escena; no la inventes vos. Plantilla: [plan.md](plan.md).
 
-`NEED_SETUP` pide solo: packed scenes que ya existen, estado inicial legítimo (posición, `.tres` existente, qué nodos están), acción de InputMap o control, y qué se observa al final. No pidas cómo armar la escena, ni una acción nueva, ni un cambio de reglas. Si la acción no está en el InputMap, es bug: no es un ítem del pedido.
+El estado inicial lo dejó el `.tscn`. Vos solo pulsás la acción del InputMap. Si el resultado del criterio ya está visible antes del `press`, es un bug de la escena de prueba: reportalo, no lo “arregles” jugando.
 
 ## 2. El humano juega; el harness no empuja
 

@@ -40,7 +40,7 @@ El trabajo de ese slice está en [Mapa](#mapa).
 
 ## Flujo de playtest
 
-Quien llama (el tech lead u otro agente, o un humano) entrega el slice y los criterios. El playtester mira el juego, escribe la partida en `res://agent/` y la corre. El informe vuelve con PASS o FAIL.
+Quien llama entrega el `F<n>`: criterios, la escena (`res://debug/…` o la del jugador) y la acción. El playtester escribe el flow y lo corre. No construye el mundo.
 
 ```mermaid
 sequenceDiagram
@@ -48,26 +48,27 @@ sequenceDiagram
   participant P as studio-playtester
   participant A as res://agent
   participant G as Godot
-  C->>P: Criterios del slice
+  C->>P: F n, escena, acción
   P->>G: inspect --unique e info
   G-->>P: %nombres e InputMap
-  P->>A: flow JSON y fixture de estado inicial
+  P->>A: flow JSON
   P->>G: cli.sh flow --fail-on-error
-  Note over G: press de la acción mapeada
+  Note over G: press = InputEventAction de la acción mapeada
   G-->>A: PNG en out/
   G-->>P: AGENT_OK o AGENT_FAIL
-  P-->>C: Informe PASS / FAIL
+  P-->>C: Informe
+  Note over C: Criterio roto vuelve al developer. Escena trampa, al reviewer. Cache, a este chat.
 ```
 
-El fixture, cuando hace falta, deja el estado inicial con packed scenes del producto. `press` manda un `InputEventAction` de una acción que ya está en el InputMap: `_unhandled_input` con `is_action_pressed` es el camino del juego. Un keycode que no está en el mapa es un bug del producto.
+`res://debug/` la nombró el tech lead y la armó el developer. `press` manda un `InputEventAction`: `_unhandled_input` con `is_action_pressed` es el camino del juego. Un keycode que no está en el mapa es un bug del producto.
 
-Si falta el estado inicial, el playtester devuelve `NEED_SETUP` y quien llama responde con `PLAYTEST_SETUP`. Si un `class_name` no está en el cache, importa una vez; si el error vuelve, devuelve `CACHE_STALE`.
+Si esa escena no está, el playtester devuelve `NEED_SETUP` y no la inventa. Si un `class_name` no está en el cache, importa una vez; si el error vuelve, devuelve `CACHE_STALE`.
 
 Reglas cortas:
 
 1. Ejercé **todos** los criterios del slice, no una muestra.
-2. No esperes permiso. Si falta el contexto, `NEED_SETUP` y pará. El árbol va en el informe cuando ya podés jugar.
-3. Fixture en `res://agent/fixtures/` solo para el estado inicial que el setup nombra. La escena del producto cuando el criterio ya empieza ahí.
+2. No hay un segundo OK. Si falta `res://debug/`, `NEED_SETUP` y pará.
+3. Jugá la escena del `F<n>`. No la crees y no uses `call()` para armarla.
 4. Solo acciones ya mapeadas en el editor, o click/type del control. Sin keycodes. Sin `func` que mueva o fuerce el estado.
 5. Cero archivos fuera de `res://agent/`. Cero cambios a InputMap, resources o scripts de juego.
 6. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.

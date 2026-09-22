@@ -20,7 +20,7 @@
         "id": "escenario",
         "label": "Qué se escribe",
         "focus": ["playtester", "agent"],
-        "note": "flows/*.json y, si hace falta, un fixture con el estado inicial. Nada fuera de res://agent/."
+        "note": "Solo el flow. La escena res://debug ya la armó el developer."
       },
       {
         "id": "corrida",
@@ -33,7 +33,7 @@
   "participants": [
     { "id": "caller", "type": "external", "label": "Quien llama", "sublabel": "tech lead" },
     { "id": "playtester", "type": "frontend", "label": "studio-playtester", "sublabel": "solo el slice" },
-    { "id": "agent", "type": "database", "label": "res://agent/", "sublabel": "flows · fixtures · out" },
+    { "id": "agent", "type": "database", "label": "res://agent/", "sublabel": "flows y out" },
     { "id": "godot", "type": "backend", "label": "Godot", "sublabel": "AgentKit CLI" }
   ],
   "segments": [
@@ -45,9 +45,8 @@
     { "from": "caller", "to": "playtester", "y": 190, "label": "criterios del slice", "variant": "emphasis" },
     { "from": "playtester", "to": "godot", "y": 240, "label": "inspect --unique e info", "variant": "default" },
     { "from": "godot", "to": "playtester", "y": 285, "label": "%nombres e InputMap", "variant": "return" },
-    { "from": "playtester", "to": "agent", "y": 370, "label": "flow JSON", "variant": "emphasis" },
-    { "from": "playtester", "to": "agent", "y": 430, "label": "fixture: estado inicial", "variant": "default" },
-    { "from": "playtester", "to": "godot", "y": 560, "label": "cli.sh flow --fail-on-error", "variant": "emphasis" },
+    { "from": "playtester", "to": "agent", "y": 400, "label": "flow JSON hacia res://debug", "variant": "emphasis" },
+    { "from": "playtester", "to": "godot", "y": 520, "label": "cli.sh flow --fail-on-error", "variant": "emphasis" },
     { "from": "playtester", "to": "godot", "y": 610, "label": "press de la acción mapeada", "variant": "emphasis" },
     { "from": "godot", "to": "agent", "y": 640, "label": "PNG en out/", "variant": "default" },
     { "from": "godot", "to": "playtester", "y": 690, "label": "AGENT_OK o AGENT_FAIL", "variant": "return" },
@@ -63,9 +62,9 @@
       "dot": "cyan",
       "title": "res://agent/",
       "items": [
-        "flows/*.json es la partida: click que pega, press de una acción del InputMap, assert",
-        "fixtures/ arma el estado inicial con packed scenes del producto",
-        "harness/ solo si el JSON no puede preparar la escena. out/ guarda los PNG"
+        "flows/*.json apunta a res://debug o a la escena del jugador",
+        "El playtester no crea esa escena ni usa call() para armarla",
+        "out/ guarda los PNG. El harness no dispara ni mueve"
       ]
     },
     {
@@ -81,7 +80,7 @@
       "dot": "orange",
       "title": "Qué puede devolver",
       "items": [
-        "NEED_SETUP: falta el estado inicial. Quien llama responde con PLAYTEST_SETUP",
+        "NEED_SETUP: no hay res://debug en el F n. Quien llama completa el plan",
         "CACHE_STALE: un --import no registró el class_name. Quien llama lo resuelve",
         "El informe nombra cada criterio con PNG, AGENT_PRINT y la consola"
       ]
