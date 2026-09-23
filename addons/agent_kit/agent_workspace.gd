@@ -6,11 +6,22 @@ extends RefCounted
 const ROOT := "res://agent"
 const FLOWS := "res://agent/flows"
 const HARNESS := "res://agent/harness"
+const FIXTURES := "res://agent/fixtures"
 const OUT := "res://agent/out"
+const _FORCE_TOKENS: PackedStringArray = [
+	"global_position",
+	"velocity",
+	"InputEventKey",
+	"parse_input_event",
+	"time_scale",
+	".call(",
+	"callv(",
+	"translate(",
+]
 
 
 static func ensure_dirs() -> void:
-	for res_dir in [ROOT, FLOWS, HARNESS, OUT]:
+	for res_dir in [ROOT, FLOWS, HARNESS, FIXTURES, OUT]:
 		var abs_path := ProjectSettings.globalize_path(res_dir)
 		DirAccess.make_dir_recursive_absolute(abs_path)
 
@@ -63,23 +74,36 @@ static func list_harness_names() -> PackedStringArray:
 	return names
 
 
-static func mount(host: Node) -> void:
+static func mount(host: Node) -> String:
 	if host == null:
-		return
+		return ""
 	ensure_dirs()
 	var abs_path := ProjectSettings.globalize_path(HARNESS)
 	if not DirAccess.dir_exists_absolute(abs_path):
-		return
+		return ""
 	var dir := DirAccess.open(HARNESS)
 	if dir == null:
-		return
+		return ""
 	dir.list_dir_begin()
 	var file := dir.get_next()
 	while not file.is_empty():
 		if not dir.current_is_dir() and file.ends_with(".gd"):
+			var violation := _harness_violation(HARNESS.path_join(file))
+			if not violation.is_empty():
+				dir.list_dir_end()
+				return violation
 			_mount_script(host, file)
 		file = dir.get_next()
 	dir.list_dir_end()
+	return ""
+
+
+static func _harness_violation(res_path: String) -> String:
+	var text := FileAccess.get_file_as_string(res_path)
+	for token in _FORCE_TOKENS:
+		if text.contains(token):
+			return "harness %s forces play (%s); use click or InputMap press" % [res_path, token]
+	return ""
 
 
 static func _mount_script(host: Node, file: String) -> void:

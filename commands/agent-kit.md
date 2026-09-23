@@ -12,9 +12,11 @@ Load skill `godot-agent-kit`. If `addons/agent_kit/` is missing next to `project
 ./install.sh --addon /ABS/GODOT_ROOT
 ```
 
-**Isolation:** anything you create for AgentKit stays in `res://agent/` (flows, harness, fixtures, out). Isolated feature scenes go in `agent/fixtures/` (instance product packed scenes), never `scenes/`. Reuse `hooks.gd`; drive actions with InputMap `press` / `click`, not code-forced motion. How: skill `godot-playtest` → `evaluate.md`.
+**Isolation:** anything you create stays in `res://agent/` (flows, harness, fixtures, out). Do not edit business rules or InputMap. Do not wait for user OK — check those limits yourself (`evaluate.md`).
 
-**Plan:** if you will add or edit those files, publish `PLAYTEST_PLAN` (paths + why + tree) to the user first and wait for OK. Skill `godot-playtest` → `plan.md`. Running an existing flow does not need a plan.
+**Play:** play `res://debug/…` when the slice names it; otherwise the shipping scene. If the situation needs a debug scene and none was named, return only `NEED_SETUP`. Do not build that `.tscn` and do not `call()` it into place. Actions are InputMap `press` (`InputEventAction`). A raw keycode is a product bug. Skill `godot-playtest` → `plan.md`.
+
+**Class cache:** `Could not find type "X"` when `X` is a `class_name` in a `.gd` is a stale `.godot/global_script_class_cache.cfg`. Run `godot --headless --path PROJECT --import --quit` once and rerun the flow. Do not edit the cache file. If the same error remains, return `CACHE_STALE` to the caller and stop.
 
 Do not use `godot -s /tmp/*.gd`. Use:
 
@@ -27,4 +29,4 @@ Set `GODOT=` if the binary is not found. Capture/flow **without** `--headless`. 
 
 Optional cable editor: `experimental/agent-flow-editor/` (`pnpm install` && `pnpm dev`). Same JSON as `--agent=flow`.
 
-A playtest still needs user OK (`godot-playtest`). This is not an MCP.
+A playtest does not wait for user OK. The agent only writes under `res://agent/` and does not change business rules. This is not an MCP.

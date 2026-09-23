@@ -1,0 +1,39 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scenes/world/run.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://cshipactor0001" path="res://scenes/actors/ship.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://cobstacle00001" path="res://scenes/actors/obstacle.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://crunhud0000001" path="res://scenes/ui/run_hud.tscn" id="4"]
+[ext_resource type="Resource" path="res://resources/match/match_rules.tres" id="5"]
+[ext_resource type="Resource" path="res://resources/obstacles/cube_wide.tres" id="6"]
+
+[sub_resource type="Environment" id="Environment_side"]
+background_mode = 1
+background_color = Color(0.04, 0.05, 0.08, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.45, 0.5, 0.58, 1)
+ambient_light_energy = 0.85
+
+[node name="SideCrash" type="Node3D"]
+script = ExtResource("1")
+rules = ExtResource("5")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_side")
+
+[node name="Ship" parent="." instance=ExtResource("2")]
+unique_name_in_owner = true
+
+[node name="ObstacleSide" parent="." instance=ExtResource("3")]
+unique_name_in_owner = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -14)
+data = ExtResource("6")
+cube_color = Color(0.4, 0.7, 0.45, 1)
+
+[node name="RunHud" parent="." instance=ExtResource("4")]
+
+[node name="HpLabel" parent="RunHud" index="0"]
+unique_name_in_owner = true
+
+[node name="CrashBanner" parent="RunHud" index="1"]
+unique_name_in_owner = true

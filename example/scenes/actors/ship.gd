@@ -8,6 +8,7 @@ signal crashed
 @export var hurtbox: Hurtbox3D
 @export var rail_motor: RailMotor
 @export var ship_steer: ShipSteer
+@export var ship_gun: ShipGun
 @export var rules: MatchRules
 @export var hull_color: Color = Color(0.35, 0.75, 0.95):
 	set(value):
@@ -30,6 +31,8 @@ func _ready() -> void:
 		rail_motor = get_node_or_null("RailMotor") as RailMotor
 	if ship_steer == null:
 		ship_steer = get_node_or_null("ShipSteer") as ShipSteer
+	if ship_gun == null:
+		ship_gun = get_node_or_null("ShipGun") as ShipGun
 	if health and rules:
 		health.setup(rules.starting_hp)
 		health.died.connect(_on_died)
@@ -91,6 +94,8 @@ func _get_configuration_warnings() -> PackedStringArray:
 		warnings.append("Assign a RailMotor component.")
 	if ship_steer == null:
 		warnings.append("Assign a ShipSteer component.")
+	if ship_gun == null:
+		warnings.append("Assign a ShipGun component.")
 	if rules == null:
 		warnings.append("Assign MatchRules.")
 	return warnings

@@ -1,19 +1,13 @@
 {
-	"wait_first": 0.8,
+	"scene": "res://agent/fixtures/side_crash.tscn",
+	"wait_first": 0.4,
 	"steps": [
-		{
-			"repeat": {
-				"times": 20,
-				"until": { "node": "%Ship", "visible_in_tree": true },
-				"steps": [
-					{ "try_click": "%PlaySolo" },
-					{ "wait": 0.15 }
-				]
-			}
-		},
+		{ "assert": { "node": "%Ship", "visible_in_tree": true } },
+		{ "assert": { "node": "%ObstacleSide", "visible_in_tree": true } },
 		{ "assert": { "node": "%CrashBanner", "visible": false } },
-		{ "press": { "name": "move_left", "hold": 0.4 } },
-		{ "wait_until": { "node": "%CrashBanner", "visible": true, "timeout": 8 } },
+		{ "assert": { "node": "%HpLabel", "text_contains": "HP 1" } },
+		{ "press": { "name": "move_left", "hold": 0.35 } },
+		{ "wait_until": { "node": "%CrashBanner", "visible": true, "timeout": 4 } },
 		{ "assert": { "node": "%CrashBanner", "text_contains": "Chocaste" } },
 		{ "print": { "node": "%Ship", "prop": "position" } },
 		{ "print": { "node": "%HpLabel", "prop": "text" } },

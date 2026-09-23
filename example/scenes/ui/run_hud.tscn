@@ -32,3 +32,13 @@ theme_override_font_sizes/font_size = 36
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "Chocaste"
+
+[node name="HitLabel" type="Label" parent="."]
+unique_name_in_owner = true
+visible = false
+offset_left = 24.0
+offset_top = 56.0
+offset_right = 220.0
+offset_bottom = 92.0
+theme_override_font_sizes/font_size = 22
+text = "Impacto"

@@ -8,7 +8,7 @@ El título vive en **otro** proyecto. Este repo instala el plugin, las skills, e
 
 ## Mapa
 
-Mapa interactivo del playtest: https://joelnicolass.github.io/godot-studio-playtest/
+Mapa del trabajo de un slice: https://joelnicolass.github.io/godot-studio-playtest/
 
 Fuente: [`docs/architecture.json`](docs/architecture.json).
 
@@ -22,27 +22,6 @@ Un agente que “prueba” el juego suele:
 
 Acá el contrato es el contrario: el agente habla con Godot por CLI, el flow es JSON, y los helpers viven en `res://agent/`.
 
-```mermaid
-flowchart TB
-  subgraph before [Sin AgentKit]
-    a1["godot -s /tmp/*.gd"]
-    a2[PNG inventado]
-    a3["test.tscn / agent_* en scenes/"]
-    a1 --> fail[Autoloads rotos / evidencia falsa]
-    a2 --> fail
-    a3 --> fail
-  end
-
-  subgraph after [Con este módulo]
-    b1[addons/agent_kit CLI]
-    b2["res://agent/flows JSON"]
-    b3["res://agent/harness"]
-    b1 --> ok["AGENT_OK / AGENT_FAIL"]
-    b2 --> ok
-    b3 --> ok
-  end
-```
-
 ## Qué es cada pieza
 
 Cursor distingue **skill** (procedimiento que el agente carga), **command** (prompt que invocás con `/`) y **subagente** (rol aislado, otro contexto). Este repo usa las tres, más un plugin Godot.
@@ -51,44 +30,49 @@ Cursor distingue **skill** (procedimiento que el agente carga), **command** (pro
 |-------|------|-----|
 | Plugin Godot | `addons/agent_kit/` | Autoload + `cli.sh`: capture, flow, inspect, fetch, diff. Cero gameplay. |
 | Skill `godot-agent-kit` | `skills/godot-agent-kit/` | Cómo hablar con el CLI y dónde va el harness. |
-| Skill `godot-playtest` | `skills/godot-playtest/` | Cómo ejercer un slice **después** de que el usuario acepte. |
+| Skill `godot-playtest` | `skills/godot-playtest/` | Cómo ejercer un slice. No espera OK. Solo escribe en `res://agent/`. |
 | Command `/agent-kit` | `commands/agent-kit.md` | Atajo humano: captura / flow / inspect ya. |
-| Subagente `studio-playtester` | `agents/studio-playtester.md` | Corre el binario y devuelve PASS/FAIL. No escribe producto. |
+| Subagente `studio-playtester` | `agents/studio-playtester.md` | Corre el binario y devuelve PASS/FAIL. No toca reglas de negocio. |
 | Workspace | `res://agent/` en **tu** juego | `flows/`, `harness/`, `fixtures/`, `out/`. Lo crea el instalador. **Cero** archivos de playtest fuera. |
 | Editor experimental | `experimental/agent-flow-editor/` | Cables → el mismo JSON. No entra en `./install.sh`. |
 
-El grafo de esas piezas está en [Mapa](#mapa).
+El trabajo de ese slice está en [Mapa](#mapa).
 
 ## Flujo de playtest
 
-El playtest **no** arranca solo. Hace falta OK explícito. **Nada** del agente para AgentKit sale de `res://agent/` (ni una escena `test_` en `scenes/`).
+Quien llama entrega el `F<n>`: criterios, la escena (`res://debug/…` o la del jugador) y la acción. El playtester escribe el flow y lo corre. No construye el mundo.
 
 ```mermaid
-flowchart TD
-  ask{¿Playtest de este slice?}
-  ask -->|no| stop[No se lanza Godot]
-  ask -->|sí| inspect[inspect --unique]
-  inspect --> plan[PLAYTEST_PLAN: archivos + por qué + tree]
-  plan --> okp{¿PLAN_OK?}
-  okp -->|no| wait[Esperar]
-  okp -->|sí| flow["solo res://agent/ : flows, harness, fixtures, out"]
-  flow --> clicks{¿Input / click de jugador?}
-  clicks -->|sí| run["cli.sh flow --fail-on-error"]
-  clicks -->|no, y no es la acción| harness["reuso hooks; no warp"]
-  harness --> run
-  run --> report[PASS / FAIL + PNG + AGENT_ERRORS]
+sequenceDiagram
+  participant C as Quien llama
+  participant P as studio-playtester
+  participant A as res://agent
+  participant G as Godot
+  C->>P: F n, escena, acción
+  P->>G: inspect --unique e info
+  G-->>P: %nombres e InputMap
+  P->>A: flow JSON
+  P->>G: cli.sh flow --fail-on-error
+  Note over G: press = InputEventAction de la acción mapeada
+  G-->>A: PNG en out/
+  G-->>P: AGENT_OK o AGENT_FAIL
+  P-->>C: Informe
+  Note over C: Criterio roto vuelve al developer. Escena trampa, al reviewer. Cache, a este chat.
 ```
+
+`res://debug/` la nombró el tech lead y la armó el developer. `press` manda un `InputEventAction`: `_unhandled_input` con `is_action_pressed` es el camino del juego. Un keycode que no está en el mapa es un bug del producto.
+
+Si esa escena no está, el playtester devuelve `NEED_SETUP` y no la inventa. Si un `class_name` no está en el cache, importa una vez; si el error vuelve, devuelve `CACHE_STALE`.
 
 Reglas cortas:
 
 1. Ejercé **todos** los criterios del slice, no una muestra.
-2. Antes de generar código de playtest: plan + tree al usuario o al agente padre. Esperá OK.
-3. Feature aislada: fixture en `res://agent/fixtures/` (packed scenes del producto), no la escena principal salvo que el criterio sea el boot.
-4. Reusá `hooks.gd`. InputMap `press` / `click` como el jugador; no forzar movimiento en código.
-5. Helpers, JSON, fixtures y dumps **solo** en `res://agent/`. Nunca `agent_*` ni escenas de test en `src/` / `scenes/`.
-6. El harness **puede** `call("_on_play")`: en GDScript `_` no es privado de runtime.
-7. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
-8. Un `SCRIPT ERROR` es FAIL aunque el botón se haya podido pulsar.
+2. No hay un segundo OK. Si falta `res://debug/`, `NEED_SETUP` y pará.
+3. Jugá la escena del `F<n>`. No la crees y no uses `call()` para armarla.
+4. Solo acciones ya mapeadas en el editor, o click/type del control. Sin keycodes. Sin `func` que mueva o fuerce el estado.
+5. Cero archivos fuera de `res://agent/`. Cero cambios a InputMap, resources o scripts de juego.
+6. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
+7. Un `SCRIPT ERROR` o `unmapped input` es FAIL. `Could not find type` de un `class_name` que ya existe: un `--import` y se reintenta el flow. Si vuelve, `CACHE_STALE` a quien llamó.
 
 ## Instalar Cursor
 
@@ -122,11 +106,11 @@ addons/agent_kit/cli.sh /ABS/GODOT_ROOT flow --flow=boot_smoke.json --fail-on-er
 
 ## Demo
 
-[`example/`](example/README.md) es un boot mínimo (`%PlaySolo` → `%AfterPlay`).
+[`example/`](example/README.md) es el slice de prueba (boot → carrera). `example/addons/agent_kit` es un enlace a `addons/agent_kit/`: una sola fuente.
 
 ```bash
 example/addons/agent_kit/cli.sh example flow --flow=boot_smoke.json --fail-on-error
-example/addons/agent_kit/cli.sh example flow --flow=call_private_harness.json --fail-on-error
+example/addons/agent_kit/cli.sh example flow --flow=crash_side.json --fail-on-error
 ```
 
 ## Editor de flow (opcional)

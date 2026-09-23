@@ -60,3 +60,6 @@ unique_name_in_owner = true
 
 [node name="CrashBanner" parent="RunHud" index="1"]
 unique_name_in_owner = true
+
+[node name="HitLabel" parent="RunHud" index="2"]
+unique_name_in_owner = true

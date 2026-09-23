@@ -1,0 +1,36 @@
+{
+	"wait_first": 0.8,
+	"steps": [
+		{ "shot": "fire_hit_01_boot.png" },
+		{
+			"repeat": {
+				"times": 20,
+				"until": { "node": "%Ship", "visible_in_tree": true },
+				"steps": [
+					{ "try_click": "%PlaySolo" },
+					{ "wait": 0.15 }
+				]
+			}
+		},
+		{ "assert": { "node": "%Ship", "visible_in_tree": true } },
+		{ "assert": { "node": "%ObstacleOnRail", "visible_in_tree": true } },
+		{ "assert": { "node": "%HitLabel", "visible": false } },
+		{ "print": { "node": "%Ship", "prop": "global_position" } },
+		{ "print": { "node": "%ObstacleOnRail", "prop": "global_position" } },
+		{ "press": { "name": "fire", "hold": 0.05 } },
+		{ "shot": "fire_hit_02_fired.png" },
+		{
+			"wait_until": {
+				"node": "%HitLabel",
+				"visible": true,
+				"timeout": 2.0
+			}
+		},
+		{ "assert": { "node": "%ObstacleOnRail", "visible_in_tree": false } },
+		{ "assert": { "node": "%HitLabel", "visible": true } },
+		{ "assert": { "node": "%HitLabel", "text_contains": "Impacto" } },
+		{ "print": { "node": "%HitLabel", "prop": "text" } },
+		{ "print": { "node": "%HitLabel", "prop": "visible" } },
+		{ "shot": "fire_hit_03_impacto.png" }
+	]
+}
