@@ -1,6 +1,6 @@
 # Godot studio playtest
 
-Playtest de **Godot 4** para agentes en Cursor: capturar el juego de verdad, hacer clicks como un jugador, y no contaminar `src/`.
+Playtest de **Godot 4** para agentes en Claude Code o Cursor: capturar el juego de verdad, hacer clicks como un jugador, y no contaminar `src/`.
 
 Repo: https://github.com/Joelnicolass/godot-studio-playtest
 
@@ -24,7 +24,7 @@ Acá el contrato es el contrario: el agente habla con Godot por CLI, el flow es 
 
 ## Qué es cada pieza
 
-Cursor distingue **skill** (procedimiento que el agente carga), **command** (prompt que invocás con `/`) y **subagente** (rol aislado, otro contexto). Este repo usa las tres, más un plugin Godot.
+Claude Code y Cursor distinguen **skill** (procedimiento que el agente carga), **command** (prompt que invocás con `/`) y **subagente** (rol aislado, otro contexto). Este repo usa las tres, más un plugin Godot.
 
 | Pieza | Path | Rol |
 |-------|------|-----|
@@ -74,22 +74,26 @@ Reglas cortas:
 6. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
 7. Un `SCRIPT ERROR` o `unmapped input` es FAIL. `Could not find type` de un `class_name` que ya existe: un `--import` y se reintenta el flow. Si vuelve, `CACHE_STALE` a quien llamó.
 
-## Instalar Cursor
+## Instalar (Claude Code o Cursor)
 
 ```bash
-./install.sh              # ~/.cursor/skills, commands, agents
-./install.sh --project    # ./.cursor/ del cwd
+./install.sh --claude            # ~/.claude/skills, commands, agents
+./install.sh                     # ~/.cursor/skills, commands, agents (default)
+./install.sh --all               # los dos
+./install.sh --claude --project  # ./.claude/ del cwd (sin --claude: ./.cursor/)
 ```
 
-`npx skills add Joelnicolass/godot-studio-playtest -g -a cursor -y` copia **solo** `skills/`. Command, subagente y addon van con `./install.sh`.
+`npx skills add Joelnicolass/godot-studio-playtest -g -a claude-code -y` (o `-a cursor`) copia **solo** `skills/`. Command, subagente y addon van con `./install.sh`. Desinstalar: `./uninstall.sh` con los mismos flags.
 
-Chat **nuevo** en Cursor después de instalar.
+Sesión **nueva** después de instalar. Los mismos archivos sirven para los dos harness: en Claude Code el orquestador lanza `studio-playtester` con la tool `Agent`, en Cursor con `Task`.
 
 ## Instalar el plugin en un juego
 
 ```bash
 ./install.sh --addon /path/to/godot-project
 ```
+
+El instalador también deja la regla del workspace en el juego: `.cursor/rules/agent-kit-workspace.mdc` (Cursor) y `.claude/rules/agent-kit-workspace.md` (Claude Code).
 
 Habilitá **AgentKit**. En `project.godot` (CI):
 

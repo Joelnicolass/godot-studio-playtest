@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Instala skills Cursor, command, subagente y/o el addon AgentKit.
+# Instala skills, command, subagente (Cursor y/o Claude Code) y/o el addon AgentKit.
 #   ./install.sh                      # ~/.cursor/skills, commands, agents
-#   ./install.sh --project            # ./.cursor/ del cwd
+#   ./install.sh --claude             # ~/.claude/skills, commands, agents
+#   ./install.sh --all                # los dos
+#   ./install.sh --project            # ./.cursor/ (o ./.claude/ con --claude) del cwd
 #   ./install.sh --addon GODOT_ROOT   # addons/agent_kit → GODOT_ROOT/addons/agent_kit
 set -euo pipefail
 
@@ -22,6 +24,7 @@ COMMAND_FILES=(
 )
 
 MODE="global"
+HARNESS="cursor"
 DEST=""
 GODOT_ROOT=""
 ADDON_WHICH="agent_kit"
@@ -33,8 +36,10 @@ usage() {
   cat <<'EOF'
 Instalador de Godot studio playtest (AgentKit + playtester).
 
-  ./install.sh                      ~/.cursor/skills, commands y agents
-  ./install.sh --project            ./.cursor/skills, commands y agents del cwd
+  ./install.sh                      ~/.cursor/skills, commands y agents (Cursor, default)
+  ./install.sh --claude             ~/.claude/skills, commands y agents (Claude Code)
+  ./install.sh --all                Cursor y Claude Code
+  ./install.sh --project            ./.cursor/ del cwd (./.claude/ con --claude; los dos con --all)
   ./install.sh --dest DIR           Skills en DIR (commands y agents al lado)
   ./install.sh --addon GODOT_ROOT [agent_kit]
                                     Copia el addon al proyecto Godot (default: agent_kit)
@@ -46,6 +51,7 @@ Instalador de Godot studio playtest (AgentKit + playtester).
   ./install.sh --pack               Genera dist/godot-studio-playtest.zip
 
   npx skills add Joelnicolass/godot-studio-playtest -g -a cursor -y
+  npx skills add Joelnicolass/godot-studio-playtest -g -a claude-code -y
 
 EOF
 }
@@ -62,6 +68,18 @@ while [[ $# -gt 0 ]]; do
       ;;
     --global|-g)
       MODE="global"
+      shift
+      ;;
+    --cursor)
+      HARNESS="cursor"
+      shift
+      ;;
+    --claude)
+      HARNESS="claude"
+      shift
+      ;;
+    --all)
+      HARNESS="all"
       shift
       ;;
     --dest)
@@ -137,51 +155,64 @@ if [[ "$DO_SKILLS" -eq 1 ]]; then
   done
 fi
 
-resolve_skill_dest() {
+# Cursor y Claude Code comparten layout: <base>/{skills,commands,agents}.
+harness_list() {
+  if [[ "$MODE" == "custom" ]]; then
+    echo "custom"
+    return
+  fi
+  case "$HARNESS" in
+    all) echo "cursor claude" ;;
+    *) echo "$HARNESS" ;;
+  esac
+}
+
+harness_label() {
+  case "$1" in
+    cursor) echo "Cursor" ;;
+    claude) echo "Claude Code" ;;
+    *) echo "$DEST" ;;
+  esac
+}
+
+harness_base() {
   case "$MODE" in
-    global) echo "${HOME}/.cursor/skills" ;;
-    project) echo "$(pwd)/.cursor/skills" ;;
-    custom) echo "$DEST" ;;
+    global) echo "${HOME}/.$1" ;;
+    project) echo "$(pwd)/.$1" ;;
+    custom) (cd "$(dirname "$DEST")" && pwd) ;;
     *) echo "" ;;
   esac
+}
+
+resolve_skill_dest() {
+  if [[ "$MODE" == "custom" ]]; then
+    echo "$DEST"
+  else
+    echo "$(harness_base "$1")/skills"
+  fi
 }
 
 resolve_command_dest() {
-  case "$MODE" in
-    global) echo "${HOME}/.cursor/commands" ;;
-    project) echo "$(pwd)/.cursor/commands" ;;
-    custom)
-      local parent
-      parent="$(cd "$(dirname "$DEST")" && pwd)"
-      echo "${parent}/commands"
-      ;;
-    *) echo "" ;;
-  esac
+  echo "$(harness_base "$1")/commands"
 }
 
 resolve_agent_dest() {
-  case "$MODE" in
-    global) echo "${HOME}/.cursor/agents" ;;
-    project) echo "$(pwd)/.cursor/agents" ;;
-    custom)
-      local parent
-      parent="$(cd "$(dirname "$DEST")" && pwd)"
-      echo "${parent}/agents"
-      ;;
-    *) echo "" ;;
-  esac
+  echo "$(harness_base "$1")/agents"
 }
 
-install_agent_kit_cursor_rule() {
+# La regla del workspace va al juego para los dos harness: .mdc tal cual a
+# .cursor/rules/ y el mismo texto sin frontmatter a .claude/rules/.
+install_agent_kit_rules() {
   local project="$1"
   local src="${SRC}/godot-agent-kit/agent-kit-workspace.mdc"
   if [[ ! -f "$src" ]]; then
     return 0
   fi
-  local dest_dir="${project}/.cursor/rules"
-  mkdir -p "$dest_dir"
-  cp "$src" "${dest_dir}/agent-kit-workspace.mdc"
-  echo "rule     ${dest_dir}/agent-kit-workspace.mdc"
+  mkdir -p "${project}/.cursor/rules" "${project}/.claude/rules"
+  cp "$src" "${project}/.cursor/rules/agent-kit-workspace.mdc"
+  echo "rule     ${project}/.cursor/rules/agent-kit-workspace.mdc"
+  awk 'f>=2{print} /^---$/{f++}' "$src" | sed '1{/^$/d;}' > "${project}/.claude/rules/agent-kit-workspace.md"
+  echo "rule     ${project}/.claude/rules/agent-kit-workspace.md"
 }
 
 copy_one_addon() {
@@ -261,7 +292,7 @@ install_addon() {
     agent_kit)
       copy_one_addon "$project" "agent_kit"
       scaffold_agent_workspace "$project"
-      install_agent_kit_cursor_rule "$project"
+      install_agent_kit_rules "$project"
       echo
       echo "Habilitá el plugin AgentKit (autoload). CI/headless, en project.godot:"
       echo '  AgentKit="*res://addons/agent_kit/agent_kit.gd"'
@@ -316,42 +347,50 @@ if [[ "$MODE" == "list" ]]; then
   echo "Addons:"
   echo "  - addons/agent_kit  (./install.sh --addon /path/to/godot-project)"
   echo
-  echo "Destino skills (global): ${HOME}/.cursor/skills"
-  echo "Destino commands (global): ${HOME}/.cursor/commands"
-  echo "Destino agents (global): ${HOME}/.cursor/agents"
-  echo "Destino (--project): $(pwd)/.cursor/{skills,commands,agents}"
+  echo "Destino Cursor (default):      ${HOME}/.cursor/{skills,commands,agents}"
+  echo "Destino Claude Code (--claude): ${HOME}/.claude/{skills,commands,agents}"
+  echo "Con --project: $(pwd)/.cursor/ o $(pwd)/.claude/"
   exit 0
 fi
 
-if [[ "$DO_SKILLS" -eq 1 ]]; then
-  TARGET="$(resolve_skill_dest)"
-  mkdir -p "$TARGET"
-  echo "Skills → ${TARGET}"
-  for name in "${SKILL_NAMES[@]}"; do
-    rm -rf "${TARGET}/${name}"
-    cp -R "${SRC}/${name}" "${TARGET}/${name}"
-    echo "  ok  ${name}"
-  done
-  echo
-  echo "Listo (skills). Chat nuevo en Cursor para recargar."
-  echo "  playtest:     godot-playtest"
-  echo "  agent kit:    godot-agent-kit"
-fi
+install_harness() {
+  local harness="$1"
+  local label
+  label="$(harness_label "$harness")"
+  if [[ "$DO_SKILLS" -eq 1 ]]; then
+    TARGET="$(resolve_skill_dest "$harness")"
+    mkdir -p "$TARGET"
+    echo "Skills → ${TARGET}"
+    for name in "${SKILL_NAMES[@]}"; do
+      rm -rf "${TARGET}/${name}"
+      cp -R "${SRC}/${name}" "${TARGET}/${name}"
+      echo "  ok  ${name}"
+    done
+    echo
+    echo "Listo (skills). Sesión nueva en ${label} para recargar."
+    echo "  playtest:     godot-playtest"
+    echo "  agent kit:    godot-agent-kit"
+  fi
 
-if [[ "$DO_COMMANDS" -eq 1 ]]; then
-  CMD_DEST="$(resolve_command_dest)"
-  echo
-  install_commands "$CMD_DEST"
-  echo
-  echo "Listo (commands). En Cursor: /agent-kit"
-fi
+  if [[ "$DO_COMMANDS" -eq 1 ]]; then
+    CMD_DEST="$(resolve_command_dest "$harness")"
+    echo
+    install_commands "$CMD_DEST"
+    echo
+    echo "Listo (commands). En ${label}: /agent-kit"
+  fi
 
-if [[ "$DO_AGENTS" -eq 1 ]]; then
-  echo
-  install_agents "$(resolve_agent_dest)"
-  echo
-  echo "Listo (subagente studio-playtester). Chat nuevo para recargar."
-fi
+  if [[ "$DO_AGENTS" -eq 1 ]]; then
+    echo
+    install_agents "$(resolve_agent_dest "$harness")"
+    echo
+    echo "Listo (subagente studio-playtester). Sesión nueva para recargar."
+  fi
+}
+
+for harness in $(harness_list); do
+  install_harness "$harness"
+done
 
 if [[ -n "$GODOT_ROOT" ]]; then
   echo

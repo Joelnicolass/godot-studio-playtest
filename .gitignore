@@ -6,6 +6,9 @@ docs/*.visual-check.*
 .cursor/*
 !.cursor/rules/
 !.cursor/rules/**
+.claude/*
+!.claude/rules/
+!.claude/rules/**
 node_modules/
 pnpm-debug.log*
 .pnpm-store/
