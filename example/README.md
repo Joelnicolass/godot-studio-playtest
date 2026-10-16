@@ -39,6 +39,6 @@ F5 → **Jugar**: la nave avanza sola y choca el cubo del centro (`%ObstacleOnRa
 | `agent/run_suite.sh` | Corre todos los flows con `--fail-on-error` |
 | `agent/harness/hooks.gd` | Helper de playtest; llama métodos que el boot **ya** tiene |
 | `agent/out/` | PNG del run (Godot ignora la carpeta) |
-| `.cursor/rules/agent-kit-workspace.mdc` | No contaminar producto |
+| `.cursor/rules/agent-kit-workspace.mdc`, `.claude/rules/agent-kit-workspace.md` | No contaminar producto (Cursor / Claude Code) |
 
 Habilitá el plugin **AgentKit** si lo abrís en el editor. En `project.godot` ya figura el autoload.
