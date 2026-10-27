@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Self-test of the determinism module with its own scene (example/det_selftest.tscn), no game needed.
+#   bash addons/agent_kit/determinism/det_selftest.sh        (needs Godot; GODOT_BIN or godot in PATH; a few minutes)
+# Checks, in a scratch folder (the project baseline is never touched):
+#   1. `all fixed fixed2 stress` (DET_JOBS=3, in parallel): same digests in every mode -> DETERMINISM PASS; the
+#      bench's own parallel runs never mark each other CONTAMINATED (checked when no other Godot runs)
+#   1b. the same with DET_JOBS=1 (one at a time): the same digests as in parallel
+#   2. `bless` + `quick --no-window` -> QUICK PASS
+#   3. a baseline with a false digest -> `baseline ... FAIL` and QUICK FAIL
+#   4. `--break` (a script that does not compile) -> watchdog=script_error_kill, well before any time limit
+# Prints SELFTEST PASS or SELFTEST FAIL. Put an external limit on it, e.g.:
+#   perl -e 'alarm 900; exec @ARGV' bash addons/agent_kit/determinism/det_selftest.sh
+set -u
+HERE="$(cd "$(dirname "$0")" && pwd)"
+RUN="$HERE/det_run.sh"
+CASES="$HERE/example/det_cases.txt"
+T="$(mktemp -d)"
+trap 'rm -rf "$T"' EXIT
+export DET_OUT="$T/out"
+export DET_BASELINE="$T/base.txt"
+fail=0
+ok()  { echo "PASS $1"; }
+bad() { echo "FAIL $1"; fail=1; }
+
+foreign_godots() { ps -axo comm= | awk '$1 ~ /(^|\/)[Gg]odot4?$/' | wc -l | tr -d ' '; }
+quiet_before=$(foreign_godots)
+log="$T/all.log"
+DET_JOBS=3 bash "$RUN" "$CASES" all fixed fixed2 stress > "$log" 2>&1
+cat "$log"
+grep -q "^DETERMINISM PASS" "$log" && ok "all in parallel (DET_JOBS=3): same digest in fixed, fixed2 and stress" || bad "all"
+if [ "$quiet_before" = 0 ] && [ "$(foreign_godots)" = 0 ]; then
+  if grep -l "contaminated=1" "$DET_OUT"/*.meta >/dev/null 2>&1; then bad "parallel runs marked each other CONTAMINATED"
+  else ok "parallel runs of the bench do not mark each other CONTAMINATED"; fi
+else
+  echo "SKIP the CONTAMINATED check: another Godot ran on the machine"
+fi
+digests() { for f in "$DET_OUT"/*_fixed.json "$DET_OUT"/*_fixed2.json "$DET_OUT"/*_stress.json; do
+  [ -f "$f" ] && printf '%s %s\n' "$(basename "$f")" "$(python3 -I -c "import json,sys;print(json.load(open(sys.argv[1])).get('digest',''))" "$f")"; done | sort; }
+digests > "$T/parallel.txt"
+DET_JOBS=1 bash "$RUN" "$CASES" all fixed fixed2 stress > "$T/serial.log" 2>&1
+digests > "$T/serial.txt"
+grep -q "^DETERMINISM PASS" "$T/serial.log" && cmp -s "$T/parallel.txt" "$T/serial.txt" && [ -s "$T/serial.txt" ] \
+  && ok "one at a time (DET_JOBS=1): the same digests as in parallel" || bad "serial digests differ from parallel"
+
+bash "$RUN" "$CASES" bless > "$T/bless.log" 2>&1 && [ -s "$DET_BASELINE" ] && ok "bless wrote the baseline" || bad "bless"
+
+bash "$RUN" "$CASES" quick --no-window > "$T/q1.log" 2>&1
+cat "$T/q1.log"
+grep -q "^QUICK PASS" "$T/q1.log" && ok "quick with a fresh baseline" || bad "quick PASS"
+
+sed '1s/ .*/ 0000000000000000000000000000000000000000000000000000000000000000/' "$DET_BASELINE" > "$T/fake.txt"
+DET_BASELINE="$T/fake.txt" bash "$RUN" "$CASES" quick --no-window > "$T/q2.log" 2>&1
+cat "$T/q2.log"
+grep -q "^baseline .* FAIL" "$T/q2.log" && grep -q "^QUICK FAIL" "$T/q2.log" && ok "false baseline -> QUICK FAIL" || bad "false baseline"
+
+bash "$RUN" "$CASES" broken fixed > "$T/b.log" 2>&1
+cat "$T/b.log"
+grep -q "watchdog=script_error_kill" "$DET_OUT/broken_fixed.meta" 2>/dev/null && ok "broken script -> script_error_kill" || bad "script_error_kill"
+
+[ $fail = 0 ] && { echo "SELFTEST PASS"; exit 0; } || { echo "SELFTEST FAIL"; exit 1; }
