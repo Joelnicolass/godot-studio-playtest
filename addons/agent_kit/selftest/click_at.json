@@ -1,0 +1,43 @@
+{
+  "scene": "res://addons/agent_kit/selftest/click_at_world.tscn",
+  "wait_first": 0.2,
+  "steps": [
+    { "click_at": { "x": 400, "y": 300 } },
+    { "assert": { "node": "%Probe", "prop": "clicks", "equals": 1 } },
+    { "assert": { "node": "%Probe", "prop": "releases", "equals": 1 } },
+    { "assert": { "node": "%Probe", "prop": "last_button", "equals": 1 } },
+    { "assert": { "node": "%Probe", "prop": "last_x", "gte": 399.5, "lte": 400.5 } },
+    { "assert": { "node": "%Probe", "prop": "last_y", "gte": 299.5, "lte": 300.5 } },
+    { "assert": { "node": "%Probe", "prop": "motions", "gte": 1 } },
+
+    { "click_at": { "world": [2.5, 0, -1.5] } },
+    { "assert": { "node": "%Probe", "prop": "clicks", "equals": 2 } },
+    { "assert": { "node": "%Probe", "prop": "hit_x", "gte": 2.45, "lte": 2.55 } },
+    { "assert": { "node": "%Probe", "prop": "hit_z", "gte": -1.55, "lte": -1.45 } },
+
+    { "click_at": { "world": [-3, 0, 2], "button": "right" } },
+    { "assert": { "node": "%Probe", "prop": "clicks", "equals": 3 } },
+    { "assert": { "node": "%Probe", "prop": "last_button", "equals": 2 } },
+    { "assert": { "node": "%Probe", "prop": "hit_x", "gte": -3.05, "lte": -2.95 } },
+    { "assert": { "node": "%Probe", "prop": "hit_z", "gte": 1.95, "lte": 2.05 } },
+
+    { "click_at": { "x": 40, "y": 20 } },
+    { "assert": { "node": "%Probe", "prop": "cover_presses", "equals": 1 } },
+    { "assert": { "node": "%Probe", "prop": "clicks", "equals": 3 } },
+    { "assert": { "node": "%Probe", "prop": "input_presses", "equals": 4 } },
+
+    {
+      "repeat": {
+        "times": 6,
+        "until": { "node": "%Probe", "prop": "clicks", "gte": 5 },
+        "steps": [
+          { "click_at": { "world": [0, 0, 0] } },
+          { "wait": 0.05 }
+        ]
+      }
+    },
+    { "assert": { "node": "%Probe", "prop": "clicks", "equals": 5 } },
+    { "assert": { "node": "%Probe", "prop": "hit_x", "gte": -0.05, "lte": 0.05 } },
+    { "assert": { "node": "%Probe", "prop": "hit_z", "gte": -0.05, "lte": 0.05 } }
+  ]
+}

@@ -25,7 +25,7 @@ addons/agent_kit/cli.sh /ABS/GODOT_ROOT capture --out=res://agent/out/a.png --wa
 addons/agent_kit/cli.sh /ABS/GODOT_ROOT flow --flow=boot_smoke.json --fail-on-error
 ```
 
-Set `GODOT=` if the binary is not found. Capture/flow **without** `--headless`. JSON, harnesses, fixture scenes and PNG dumps in `res://agent/` of the game — nowhere else. Report `AGENT_OK` / `AGENT_FAIL` and PNG paths. Turn-based UI: `try_click` + `repeat`. `git diff --name-only` must stay under `agent/`.
+Set `GODOT=` if the binary is not found. Capture/flow **without** `--headless`. JSON, harnesses, fixture scenes and PNG dumps in `res://agent/` of the game — nowhere else. Report `AGENT_OK` / `AGENT_FAIL` and PNG paths. Turn-based UI: `try_click` + `repeat`. A click on a board or the 3D world: `click_at` with `world: [x, y, z]`. `git diff --name-only` must stay under `agent/`.
 
 Optional cable editor: `experimental/agent-flow-editor/` (`pnpm install` && `pnpm dev`). Same JSON as `--agent=flow`.
 

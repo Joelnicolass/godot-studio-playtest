@@ -62,7 +62,7 @@ Grep: `AGENT_OK`, `AGENT_FAIL`, `AGENT_SHOT=`, `AGENT_PRINT`, `AGENT_CLICK`, `AG
 
 1. Playtest files go under `res://agent/` only. Do **not** wait for permission. If the starting context is missing, return only `NEED_SETUP` to the caller and stop until they send `PLAYTEST_SETUP`. Template: [plan.md](../godot-playtest/plan.md). Cut: [evaluate.md](../godot-playtest/evaluate.md).
 2. Flows in `res://agent/flows/*.json`. Steps: [flows.md](flows.md).
-3. `press` only if `InputMap` already has that action. Missing action or a keycode (`KEY_A`, `65`) is a **product bug** — do not add the mapping. UI the player would use: `click` / `type`.
+3. `press` only if `InputMap` already has that action. Missing action or a keycode (`KEY_A`, `65`) is a **product bug** — do not add the mapping. UI the player would use: `click` / `type`. A click in the world (board cell, 3D unit): `click_at` with `world: [x, y, z]` (camera-projected) or `x`, `y` (viewport pixels).
 4. Harness only in `res://agent/harness/*.gd`, and only to prepare a scene the JSON cannot. No func that moves, shoots, or forces state. Never edit product `.gd` / `.tscn` / InputMap for the flow. Isolated worlds: `res://agent/fixtures/`.
 5. Do not add spawn / force-state / count / pause helpers outside `agent/`.
 6. Long / turn-based UI: `try_click` + `repeat`, not a hard `click` on a disabled button.

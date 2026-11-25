@@ -80,6 +80,18 @@ UI que aparece y desaparece:
 
 `try_click` no falla si el nodo falta, está `disabled` o no está visible (`AGENT_SKIP`). Detalle de steps: `skills/godot-agent-kit/flows.md`. Demo: `example/agent/flows/`.
 
+Clic en el mundo (un tablero, una unidad en 3D), no en un `Control`:
+
+```json
+{ "click_at": { "x": 640, "y": 360 } }
+{ "click_at": { "world": [12.1, 0.4, 7.0] } }
+{ "click_at": { "world": [12.1, 0.4, 7.0], "button": "right" } }
+```
+
+`click_at` manda lo mismo que el mouse de un jugador: un `InputEventMouseMotion` hasta el punto, después press y release, con `Input.parse_input_event` y un frame entre cada uno. Les llega a la GUI, a `_input` y a `_unhandled_input`, en ese orden: si un `Control` tapa el punto, lo toma el `Control`. `x`, `y` son píxeles del viewport, el mismo espacio que `event.position` y `get_visible_rect()`. `world` se proyecta con la `Camera3D` actual del viewport raíz (`unproject_position`): no depende de la resolución ni del tamaño de la ventana. `button`: `left` (default), `right` o `middle`. Loguea `AGENT_CLICK at=x,y button=… [world=…]`. Falla si `world` no tiene cámara 3D, si el punto queda detrás de la cámara o fuera de la pantalla. Anda dentro de `repeat`. El juego tiene que leer el clic del evento (`event.position`); `get_viewport().get_mouse_position()` con ventana sigue al mouse real.
+
+Autoprueba headless (sin ventana, sin nada de ningún juego; ~2 s): `bash addons/agent_kit/selftest/click_at_selftest.sh [PROYECTO]` → `CLICK_AT_SELFTEST PASS`. Corre `selftest/click_at.json` sobre `selftest/click_at_world.tscn` con la ventana del proyecto y estirada (`canvas_items` y `viewport`), y los casos de error. El mismo JSON con ventana: `cli.sh PROYECTO flow --flow=res://addons/agent_kit/selftest/click_at.json --fail-on-error`.
+
 Editor experimental: `experimental/agent-flow-editor/` (Vite, **pnpm**). No entra en `./install.sh`.
 
 ## Qué no es
@@ -126,4 +138,4 @@ Mide que una misma corrida da el mismo resultado con relojes distintos. Genéric
 
 ## Versión
 
-0.1.6
+0.1.7

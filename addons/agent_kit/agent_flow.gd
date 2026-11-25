@@ -75,6 +75,11 @@ func _dispatch(tree: SceneTree, step: Dictionary, dest: String, index: int, allo
 		return await _press(tree, step["press"])
 	if step.has("try_click"):
 		return await Ops.click(scene, str(step["try_click"]), allow_skip)
+	if step.has("click_at"):
+		var spec: Variant = step["click_at"]
+		if typeof(spec) != TYPE_DICTIONARY:
+			return "click_at step must be {x, y} or {world: [x, y, z]} (button? left|right|middle)"
+		return await Ops.click_at(tree, spec)
 	if step.has("repeat"):
 		return await _repeat(tree, step["repeat"], dest, index)
 	if step.has("type"):

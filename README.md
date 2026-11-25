@@ -69,7 +69,7 @@ Reglas cortas:
 1. Ejercé **todos** los criterios del slice, no una muestra.
 2. No hay un segundo OK. Si falta `res://debug/`, `NEED_SETUP` y pará.
 3. Jugá la escena del `F<n>`. No la crees y no uses `call()` para armarla.
-4. Solo acciones ya mapeadas en el editor, o click/type del control. Sin keycodes. Sin `func` que mueva o fuerce el estado.
+4. Solo acciones ya mapeadas en el editor, click/type del control, o `click_at` para un clic en el mundo (una casilla, un punto 3D). Sin keycodes. Sin `func` que mueva o fuerce el estado.
 5. Cero archivos fuera de `res://agent/`. Cero cambios a InputMap, resources o scripts de juego.
 6. `capture` / `flow` necesitan **ventana**. `--fail-on-error` tumba el run si Godot logueó ERROR.
 7. Un `SCRIPT ERROR` o `unmapped input` es FAIL. `Could not find type` de un `class_name` que ya existe: un `--import` y se reintenta el flow. Si vuelve, `CACHE_STALE` a quien llamó.

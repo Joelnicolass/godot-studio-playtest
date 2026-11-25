@@ -4,6 +4,14 @@ extends RefCounted
 const Workspace := preload("res://addons/agent_kit/agent_workspace.gd")
 # Underscore methods are callable (GDScript "_" is a convention, not runtime privacy).
 const _BLOCKED_METHODS := ["free", "queue_free", "replace_by", "set_script"]
+const _CLICK_BUTTONS := {
+	"left": MOUSE_BUTTON_LEFT,
+	"right": MOUSE_BUTTON_RIGHT,
+	"middle": MOUSE_BUTTON_MIDDLE,
+}
+
+## Last pointer position sent by click_at, in window pixels (null until the first click).
+static var _pointer_at: Variant = null
 
 
 static func is_headless() -> bool:
@@ -144,6 +152,102 @@ static func _pointer_click(button: BaseButton, spec: String) -> String:
 		return "click missed %s (pointer did not hit the control)" % spec
 	print("AGENT_CLICK ", spec)
 	return ""
+
+
+## Clicks the game's world, not a Control: `{x, y}` in viewport pixels (the space of
+## `event.position` and `get_visible_rect()`), or `{world: [x, y, z]}` projected with the root
+## viewport's Camera3D. Optional `button`: left (default), right, middle. Sends what a player's
+## mouse sends: a motion to the point, then press and release, through `Input.parse_input_event`,
+## so the GUI, `_input` and `_unhandled_input` get it in that order. A Control on top takes it.
+static func click_at(tree: SceneTree, spec: Dictionary) -> String:
+	var viewport: Viewport = tree.root
+	var button_name := str(spec.get("button", "left")).strip_edges().to_lower()
+	if not _CLICK_BUTTONS.has(button_name):
+		return "click_at button must be left, right or middle (got %s)" % button_name
+	var button: MouseButton = _CLICK_BUTTONS[button_name]
+	var has_xy := spec.has("x") or spec.has("y")
+	var point := Vector2.ZERO
+	var world_label := ""
+	if spec.has("world"):
+		if has_xy:
+			return "click_at takes {x, y} or {world}, not both"
+		var parsed: Variant = _vector3(spec["world"])
+		if parsed == null:
+			return "click_at world must be [x, y, z] numbers (got %s)" % str(spec["world"])
+		var world: Vector3 = parsed
+		var camera := viewport.get_camera_3d()
+		if camera == null:
+			return "click_at world needs a current Camera3D in the root viewport (there is none)"
+		if camera.is_position_behind(world):
+			return "click_at world %s is behind the camera %s" % [_fmt3(world), camera.name]
+		point = camera.unproject_position(world)
+		world_label = " world=%s" % _fmt3(world)
+	elif spec.has("x") and spec.has("y"):
+		if not _is_number(spec["x"]) or not _is_number(spec["y"]):
+			return "click_at x and y must be numbers (got %s, %s)" % [str(spec["x"]), str(spec["y"])]
+		point = Vector2(float(spec["x"]), float(spec["y"]))
+	else:
+		return "click_at needs {x, y} in viewport pixels or {world: [x, y, z]}"
+	var rect := viewport.get_visible_rect()
+	if not rect.has_point(point):
+		return (
+			"click_at %s%s is off screen (viewport %dx%d)"
+			% [_fmt2(point), world_label, int(rect.size.x), int(rect.size.y)]
+		)
+	# Input takes window pixels; the root viewport maps them back through its stretch transform.
+	var screen: Vector2 = viewport.get_screen_transform() * point
+	var from: Vector2 = screen if _pointer_at == null else _pointer_at
+	_send_pointer_motion(screen, screen - from)
+	await tree.process_frame
+	_send_pointer_button(screen, button, true)
+	await tree.process_frame
+	_send_pointer_button(screen, button, false)
+	await tree.process_frame
+	_pointer_at = screen
+	print("AGENT_CLICK at=%s button=%s%s" % [_fmt2(point), button_name, world_label])
+	return ""
+
+
+static func _send_pointer_motion(pos: Vector2, relative: Vector2) -> void:
+	var ev := InputEventMouseMotion.new()
+	ev.position = pos
+	ev.global_position = pos
+	ev.relative = relative
+	ev.screen_relative = relative
+	Input.parse_input_event(ev)
+	Input.flush_buffered_events()
+
+
+static func _send_pointer_button(pos: Vector2, button: MouseButton, pressed: bool) -> void:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = button
+	ev.pressed = pressed
+	ev.button_mask = (1 << (int(button) - 1)) if pressed else 0
+	ev.position = pos
+	ev.global_position = pos
+	Input.parse_input_event(ev)
+	Input.flush_buffered_events()
+
+
+static func _vector3(raw: Variant) -> Variant:
+	if typeof(raw) != TYPE_ARRAY or (raw as Array).size() != 3:
+		return null
+	for item in raw:
+		if not _is_number(item):
+			return null
+	return Vector3(float(raw[0]), float(raw[1]), float(raw[2]))
+
+
+static func _is_number(value: Variant) -> bool:
+	return typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT
+
+
+static func _fmt2(v: Vector2) -> String:
+	return "%.1f,%.1f" % [v.x, v.y]
+
+
+static func _fmt3(v: Vector3) -> String:
+	return "[%.2f, %.2f, %.2f]" % [v.x, v.y, v.z]
 
 
 static func _push_mouse(node: Node, pos: Vector2, pressed: bool) -> void:

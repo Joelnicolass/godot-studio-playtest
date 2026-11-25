@@ -31,7 +31,7 @@ El estado inicial lo dejó el `.tscn`. Vos solo pulsás la acción del InputMap.
 La situación tiene que ocurrir porque el escenario está armado y el jugador actúa.
 
 - Movimiento y acciones de juego: **solo** `press` de una acción que **ya** está en el InputMap del editor (`move_left`, `ui_accept`, …).
-- UI: `click` / `type` / `select` en el control que el jugador usaría. No `call("_on_play")` para saltear el botón.
+- UI: `click` / `type` / `select` en el control que el jugador usaría. Un clic en el mundo (casilla, unidad): `click_at` con `world`, no un `call` que elija la casilla. No `call("_on_play")` para saltear el botón.
 - Si la acción no existe en el InputMap, o el nombre es un keycode (`KEY_A`, `65`): **BUG de producto**. `press` ya falla con `unmapped input`. No inventes teclas. No las agregues al proyecto.
 
 Prohibido en el harness y en el JSON: `global_position`, `velocity`, `translate`, `InputEventKey`, `time_scale` para llegar antes, un `func` que mueva o dispare, un `call` que fuerce el estado para ganar el assert.
