@@ -22,13 +22,13 @@ If the slice needs a starting context you cannot see in the product scene and th
 
 You may create flows, fixtures and harness files under `res://agent/` only. Do not edit business rules (`scenes/`, `src/`, resources, `project.godot`, InputMap). Put the tree in the report; do not stop for `PLAN_OK`. Template: [plan.md](plan.md).
 
-Player actions are InputMap `press` or a real UI control (`click` / `type`). A missing action is a product bug — do not send keycodes and do not add the mapping. The harness does not move or force state.
+Player actions are InputMap `press`, a real UI control (`click` / `type`), or a mouse click in the world (`click_at` on a board cell or a 3D point, `world: [x, y, z]` from the game). A missing action is a product bug — do not send keycodes and do not add the mapping. The harness does not move or force state.
 
 ## 1. What to exercise
 
 **All** acceptance criteria of **this** slice (the user request; FEATURES/RFC only if the game already has them). Not a sample of 3–7. If it does not fit in ~15 steps, the slice was too big: cover it and list what was left out. Each step must **fail in view** if the bug remains.
 
-If `addons/agent_kit/` exists: `inspect --unique` and `info` (InputMap) first. Play the shipping scene when the criterion already starts there. Otherwise play the `res://debug/…` scene named in the prompt, FEATURES, or RFC. If that scene is missing, return only `NEED_SETUP` and stop — do not author it and do not `call()` it into existence. Drive the action with an InputMap `press` (an `InputEventAction`, so `_unhandled_input` counts) or `click` / `type` on the player’s control. Do not teleport or set `velocity`. A raw keycode, or a script that ignores the mapped action, is a product bug. Nothing you create leaves `res://agent/`.
+If `addons/agent_kit/` exists: `inspect --unique` and `info` (InputMap) first. Play the shipping scene when the criterion already starts there. Otherwise play the `res://debug/…` scene named in the prompt, FEATURES, or RFC. If that scene is missing, return only `NEED_SETUP` and stop — do not author it and do not `call()` it into existence. Drive the action with an InputMap `press` (an `InputEventAction`, so `_unhandled_input` counts) or `click` / `type` on the player’s control, or `click_at` where the player clicks the world (a board cell, a unit). Do not teleport or set `velocity`. A raw keycode, or a script that ignores the mapped action, is a product bug. Nothing you create leaves `res://agent/`.
 
 ## 2. Launch
 
@@ -47,7 +47,7 @@ addons/agent_kit/cli.sh /ABS/GODOT_ROOT capture --out=res://agent/out/playtest.p
 addons/agent_kit/cli.sh /ABS/GODOT_ROOT flow --flow=boot_smoke.json --out=res://agent/out --fail-on-error
 ```
 
-Grep `AGENT_OK`, `AGENT_FAIL`, `AGENT_STEP`, `AGENT_STEP_ERROR`, `AGENT_ERRORS`, `ERROR:`, `SCRIPT ERROR:`, `WARNING:`. Turn-based UI: `try_click` + `repeat`. **Do not** `godot -s /tmp/capture.gd`.
+Grep `AGENT_OK`, `AGENT_FAIL`, `AGENT_STEP`, `AGENT_STEP_ERROR`, `AGENT_ERRORS`, `ERROR:`, `SCRIPT ERROR:`, `WARNING:`. Turn-based UI: `try_click` + `repeat`. Board or 3D clicks: `click_at` with `world`. **Do not** `godot -s /tmp/capture.gd`.
 
 `--fail-on-error` fails the run if the engine logged ERROR / SCRIPT ERROR even when clicks “worked”. Include that log in the report.
 

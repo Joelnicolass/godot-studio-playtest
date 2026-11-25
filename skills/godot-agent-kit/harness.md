@@ -28,12 +28,12 @@ A public product API is allowed only if the **game** already needs it (load, gen
 
 ## Player actions
 
-The runner rejects `call` on a product node, `seed`, and `time_scale`. It also rejects a harness that moves, injects keys, or calls into the product. Play with `click` (the pointer must hit the control) or InputMap `press`.
+The runner rejects `call` on a product node, `seed`, and `time_scale`. It also rejects a harness that moves, injects keys, or calls into the product. Play with `click` (the pointer must hit the control), `click_at` (a pointer click on the world: a board cell, a 3D point) or InputMap `press`.
 
 ## Order
 
 1. Isolated fixture in `res://agent/fixtures/` for the feature (not the main scene). JSON `"scene"` points there.
-2. InputMap `press` for movement and game actions — the action must already exist. `click` / `type` for UI the player would use. Do not teleport, assign `velocity` / `global_position`, inject `InputEventKey`, or `call` a method to force the outcome.
+2. InputMap `press` for movement and game actions — the action must already exist. `click` / `type` for UI the player would use, `click_at` for a click on the world. Do not teleport, assign `velocity` / `global_position`, inject `InputEventKey`, or `call` a method to force the outcome.
 3. A harness method only if the JSON cannot prepare the scene. Reuse it. No one-shot `func` per flow. No func that moves or fires.
 4. If `press` fails with `unmapped input`, stop and report a product bug. Do not add the action to `project.godot`. Do not send `KEY_*` or a keycode.
 
